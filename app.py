@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ctypes
+import json
 import re
 import sys
 import threading
@@ -36,41 +37,42 @@ LINE = "#414141"
 LINE2 = "#414141"
 TEXT = "#D4D4D4"
 MUTED = "#8d8d8d"
-WHITE = "#f4f4f4"
+WHITE = "#ffffff"  # R6-13/P2-23：官方白钮纯白（原 #f4f4f4）
 WHITE_FG = "#111111"
 GREEN = "#46BF72"
 OK = "#7ee2a8"
-ERR = "#ff7b72"
+ERR = "#ff5c5c"  # P2-23：官方 destructive
 ROW = "#2B2B2B"
 HOVER = "#242424"
 SEL = "#4B4B4B"
 GHOST = "#363636"
+ICON_MUTED = "#B9B9B9"  # P2-23/R6-8：行内图标静默色，官方实测 #B9B9B9
+CHIP_ON = "#454545"  # R6-7：chips 选中底色（官方实测 (69,69,69)）
+CHIP_ON_LINE = "#5A5A5A"  # R6-7：chips 选中描边
 POPUP_BG = "#1E1E1E"  # P0-1：弹层 inner 深底，比卡片（#2B2B2B）深一档
 COL_FIELD_W = 80
 COL_DROP_W = 96
-COL_DEL_W = 56  # P1-2：44→56，「删除」二字与列缘不再局促
+COL_DEL_W = 44  # 图标按钮列（插头/铅笔/垃圾桶，32px 画布）
 
-# R4-P1-9 文案包（findings-ux.md 逐条落地）
+# R4-P1-9 文案包（findings-ux.md 逐条落地；R6-P1-14/15：统一「推理等级」命名）
 NAME_PLACEHOLDER = "输入模型 ID，或点获取模型列表"
 CTX_PLACEHOLDER = "如 1000000（≈1M tokens）"
-MAX_PLACEHOLDER = "留空=默认"
+MAX_PLACEHOLDER = "留空 = 默认"
 API_TYPE_HINT = "不确定选哪个？大多数 OpenAI 兼容接口、中转站选第一项 Chat Completions；仅直连官方 Anthropic 接口时选最后一项。"
 NO_CANDIDATE_TEXT = "还没有候选模型：先点上方「获取模型列表」"
 NO_MATCH_TEXT = "没有匹配的模型，换个关键字试试"
 REASON_HEAD_TIP = (
-    "思考深度：勾选这个模型实际支持的档，可跳档。"
-    "例如没有「低」就不要勾低；GPT 有极致就勾极致。"
-    "只保存勾上的档，不会把中间空档补上。"
-    "对应 ZCode「推理等级（从低到高）」。"
-    "低=low、中=medium、高=high、极高=xhigh、最高=max、极致=ultra。"
+    "推理等级：勾选这个模型实际支持的档，不必连续勾；只保存勾上的。"
+    "极低=minimal、低=low、中=medium、高=high、极高=xhigh、最高=max、极致=ultra。"
 )
 DEFAULT_HEAD_TIP = (
-    "默认档位：新建会话时用的那一档，只能从已勾选的档里挑。"
-    "选『随最高勾选』则用勾选里的最高档。写在列表末尾，ZCode 读最后一项。"
+    "默认档位：新建会话时用的那一档，直接选。"
+    "选了还没在「推理等级」勾选的档，会自动勾上并设为默认。"
+    "写在列表末尾，ZCode 读最后一项。"
 )
 NUM_HEAD_TIP = (
     "上下文：模型一次能读入的最大 token 数（含对话与文件）。"
-    "最大输出：单次回复最多生成的 token 数。留空＝不写入、用模型默认。"
+    "最大输出：单次回复最多生成的 token 数。留空 = 不写入、用模型默认。"
 )
 FETCH_TIP = "向服务商拉取可用模型作候选；再在每行「模型 ID」下拉里挑选，选中的才会保存。"
 ADD_MODEL_TIP = "手动加一行自己填模型 ID；不拉取列表时用。"
@@ -82,12 +84,21 @@ MODEL_ID_CTRL_RE = re.compile(r"[\r\n\t\x00-\x1f\x7f]+")
 API_TYPE_OPTIONS = (
     ("chat", "Chat Completions (/v1/chat/completions)"),
     ("responses", "Responses (/responses)"),
-    ("anthropic", "Anthropic Messages (/anthropic/v1/messages)"),
+    # P2-22：与 sync 实际拼接的 URL 一致（anthropic 基址 + /v1/messages）
+    ("anthropic", "Anthropic Messages (/v1/messages)"),
 )
 # 档位中文都从 sync.REASONING_LABELS 来。勾选集合不是连续区间。
 REASON_UNSET = "未设置"
 DEFAULT_FOLLOW = "随最高勾选"
 LABEL_TO_LEVEL = {label: level for level, label in REASONING_LABELS.items() if level}
+
+
+def valid_positive_int(raw: str) -> bool:
+    """A2-3：行内与弹窗共用的数字口径——isdecimal + int>0，
+    拒绝 "+5"/"1_000"/"²"（isdecimal 假）与 0/负数；"001"/全角数字按值接受。"""
+    if not raw:
+        return False
+    return raw.isdecimal() and int(raw) > 0
 
 
 def api_type_short(value: str | None) -> str:
@@ -255,8 +266,15 @@ class Drop(tk.Frame):
             widget.bind("<Button-1>", self._on_click)
         if width:
             self.configure(width=width)
-        self.variable.trace_add("write", lambda *_: self._sync_color())
+        self.variable.trace_add("write", self._on_var_write)
         self._sync_color()
+
+    def _on_var_write(self, *_args) -> None:
+        # 行重建（切换供应商/保存）后旧变量仍可能被 set：控件已销毁时静默跳过。
+        try:
+            self._sync_color()
+        except tk.TclError:
+            pass
 
     def _on_click(self, event) -> None:
         self.open()
@@ -520,6 +538,437 @@ class Drop(tk.Frame):
             Popup.close()
 
 
+class IconBtn(tk.Canvas):
+    """ZCode 风格线条图标按钮：悬停变亮，带悬浮提示。行内 测试/编辑/删除 用。"""
+
+    def __init__(self, parent: tk.Misc, kind: str, command, tip: str, fonts: dict) -> None:
+        super().__init__(
+            parent, width=32, height=26, bg=ROW, highlightthickness=0, bd=0, cursor="hand2"
+        )
+        self.kind = kind
+        self.command = command
+        self.fonts = fonts
+        self.enabled = True
+        self._paint(ICON_MUTED)  # P2-23：静默色 #B9B9B9（官方行内图标实测值）
+        self.bind("<Enter>", self._on_enter)
+        self.bind("<Leave>", self._on_leave)
+        self.bind("<Button-1>", self._on_click)
+        Tooltip(self, tip, fonts)
+
+    def _paint(self, color: str) -> None:
+        self.delete("all")
+        width = 2
+        if self.kind == "test":  # 插头：连通测试
+            self.create_line(12, 3, 12, 7, width=width, fill=color)
+            self.create_line(20, 3, 20, 7, width=width, fill=color)
+            self.create_rectangle(10, 7, 22, 13, outline=color, width=width)
+            self.create_line(16, 13, 16, 21, width=width, fill=color)
+        elif self.kind == "edit":  # 铅笔：编辑
+            self.create_polygon(
+                6, 20, 8, 14, 18, 4, 22, 8, 12, 18, 6, 20,
+                outline=color, width=width, fill="",
+            )
+            self.create_line(8, 14, 12, 18, width=width, fill=color)
+        else:  # delete：垃圾桶
+            self.create_line(8, 8, 24, 8, width=width, fill=color)
+            self.create_line(14, 8, 14, 5, 18, 5, 18, 8, width=width, fill=color)
+            self.create_rectangle(10, 8, 22, 21, outline=color, width=width)
+            self.create_line(14, 12, 14, 18, width=width, fill=color)
+            self.create_line(18, 12, 18, 18, width=width, fill=color)
+
+    def _on_enter(self, _event=None) -> None:
+        if self.enabled:
+            self._paint(TEXT)
+            self.configure(bg=HOVER)
+
+    def _on_leave(self, _event=None) -> None:
+        self._paint(ICON_MUTED if self.enabled else "#3a3a3a")
+        self.configure(bg=ROW)
+
+    def _on_click(self, _event=None) -> None:
+        if self.enabled and self.command:
+            self.command()
+
+    def set_enabled(self, on: bool) -> None:
+        self.enabled = bool(on)
+        if on:
+            self.configure(cursor="hand2")
+            self._paint(ICON_MUTED)
+        else:
+            self.configure(cursor="arrow")
+            self._paint("#3a3a3a")
+
+
+class ModelEditDialog(tk.Toplevel):
+    """对应 ZCode「编辑模型配置」的详细弹窗：基础项 + 输入类型 + 模型能力 + 推理参数映射。"""
+
+    def __init__(self, app: "App", row: dict) -> None:
+        super().__init__(app)
+        self.app = app
+        self.row = row
+        meta = row["meta"]
+        self.title("编辑模型配置")
+        # R6-2：弹窗整体底色与官方一致用 CARD(#2B2B2B)，输入框 INPUT 同色靠描边区分
+        self.configure(bg=CARD)
+        self.transient(app)
+        self.resizable(False, True)
+        fonts = app.fonts
+
+        outer = tk.Frame(self, bg=CARD)
+        outer.pack(fill="both", expand=True, padx=32, pady=24)
+        # R6-3：弹窗标题用 h2（11pt bold，实测字高≈21px 对齐官方），与主窗标题拆档
+        tk.Label(
+            outer, text="编辑模型配置", bg=CARD, fg=TEXT, font=fonts["h2"], anchor="w"
+        ).pack(fill="x")
+
+        # P2-23：弹窗字段标签升为 ui 字号（官方 14px），MUTED 色不变
+        def field_label(text: str) -> None:
+            tk.Label(outer, text=text, bg=CARD, fg=MUTED, font=fonts["ui"], anchor="w").pack(
+                fill="x", pady=(14, 4)
+            )
+
+        def entry(parent: tk.Frame, value: str, show: str = "") -> tk.Entry:
+            box = tk.Frame(parent, bg=INPUT, highlightbackground=LINE2, highlightthickness=1)
+            box.pack(fill="x")
+            item = tk.Entry(
+                box,
+                bg=INPUT,
+                fg=TEXT,
+                insertbackground=TEXT,
+                relief="flat",
+                font=fonts["ui"],
+                highlightthickness=0,
+                show=show,
+            )
+            # P2-23：文字左内距 (10,0)→(14,0)（官方 14 逻辑 px）
+            item.pack(fill="x", ipady=7, padx=(14, 0))
+            item.insert(0, value)
+            return item
+
+        field_label("模型 ID")
+        self.id_entry = entry(outer, row["id"].get())
+
+        field_label("上下文窗口")
+        self.ctx_entry = entry(outer, row["ctx"].get())
+
+        field_label("最大输出 Token（留空 = 用模型默认）")
+        self.max_entry = entry(outer, row["max"].get())
+
+        field_label("输入类型（文本始终开启）")
+        input_row = tk.Frame(outer, bg=CARD)
+        input_row.pack(fill="x")
+        meta_image = bool(meta.get("supportsImage"))
+        self.var_image = tk.BooleanVar(value=(row.get("extras") or {}).get("image", meta_image))
+        self.var_video = tk.BooleanVar(value=(row.get("extras") or {}).get("video", meta.get("inputVideo")))
+        self.var_pdf = tk.BooleanVar(value=(row.get("extras") or {}).get("pdf", meta.get("inputPdf")))
+        # C2-3：BooleanVar 必须存实例引用，内联临时参数会被 GC 导致勾选框恒空
+        self.var_text = tk.BooleanVar(value=True)
+        self._chip(input_row, "文本（始终）", self.var_text, disabled=True)
+        self._chip(input_row, "图片", self.var_image)
+        self._chip(input_row, "视频", self.var_video)
+        self._chip(input_row, "PDF", self.var_pdf)
+
+        field_label("模型能力")
+        cap_row = tk.Frame(outer, bg=CARD)
+        cap_row.pack(fill="x")
+        self.var_structured = tk.BooleanVar(
+            value=(row.get("extras") or {}).get("structured", meta.get("capStructured"))
+        )
+        self.var_web = tk.BooleanVar(
+            value=(row.get("extras") or {}).get("webSearch", meta.get("capWebSearch"))
+        )
+        self.var_midconv = tk.BooleanVar(
+            value=(row.get("extras") or {}).get("midConv", meta.get("capMidConv"))
+        )
+        self._chip(cap_row, "结构化输出", self.var_structured)
+        self._chip(cap_row, "原生联网搜索", self.var_web)
+        self._chip(cap_row, "对话中系统消息", self.var_midconv)
+
+        # U-4：统一「推理等级」命名，「可跳档」改「不必连续」
+        field_label("推理等级（从低到高；勾选该模型支持的档即可，不必连续）")
+        check_row = tk.Frame(outer, bg=CARD)
+        check_row.pack(fill="x")
+        self._last_check_row = check_row
+        selected = [str(item) for item in row.get("checked") or []]
+        extras = [item for item in selected if item not in REASONING_LADDER]
+        self.reason_vars: dict[str, tk.BooleanVar] = {}
+        for level in [*REASONING_LADDER, *extras]:
+            var = tk.BooleanVar(value=level in selected)
+            self.reason_vars[level] = var
+            self._check(check_row, REASONING_LABELS.get(level, level), var)
+        custom_row = tk.Frame(outer, bg=CARD)
+        custom_row.pack(fill="x", pady=(6, 0))
+        custom_box = tk.Frame(custom_row, bg=INPUT, highlightbackground=LINE2, highlightthickness=1)
+        custom_box.pack(side="left", fill="x", expand=True)
+        # U-2/P0-3：占位提示 + 回车添加；空输入/重名/非法字符都有弹窗内反馈
+        self.custom_var = tk.StringVar()
+        self.custom_entry = tk.Entry(
+            custom_box,
+            textvariable=self.custom_var,
+            bg=INPUT,
+            fg=TEXT,
+            insertbackground=TEXT,
+            relief="flat",
+            font=fonts["ui"],
+            highlightthickness=0,
+        )
+        self.custom_entry.pack(fill="x", ipady=7, padx=(14, 0))
+        self.custom_entry.bind("<Return>", lambda _e: self._add_custom_level())
+        self.custom_ph = tk.Label(
+            custom_box,
+            text="输入档位名，回车或点按钮添加",
+            bg=INPUT,
+            fg=MUTED,
+            font=fonts["small"],
+            anchor="w",
+        )
+        self.custom_ph.bind("<Button-1>", lambda _e: self.custom_entry.focus_set())
+        self.custom_var.trace_add("write", lambda *_: self._sync_custom_ph())
+        self._sync_custom_ph()
+        self._add_btn = tk.Button(
+            custom_row,
+            text="+ 添加自定义档",
+            command=self._add_custom_level,
+            bg=GHOST,
+            fg=TEXT,
+            activebackground=HOVER,
+            activeforeground=TEXT,
+            bd=0,
+            font=fonts["small"],
+            padx=10,
+            pady=4,
+            cursor="hand2",
+        )
+        self._add_btn.pack(side="left", padx=(8, 0), pady=6)
+
+        # R6-2/P0-2：map 是「单个 CEL 表达式字符串」（ZCode schema t.string()，builtin 101 处皆然）
+        field_label("推理参数映射")
+        self.map_text = tk.Text(
+            outer,
+            height=6,
+            bg=INPUT,
+            fg=TEXT,
+            insertbackground=TEXT,
+            relief="flat",
+            font=fonts["ui"],
+            highlightthickness=1,
+            highlightbackground=LINE2,
+            wrap="none",
+        )
+        self.map_text.pack(fill="x")
+        tk.Label(
+            outer,
+            text=(
+                "用 CEL 表达式把当前推理档位写进请求体：表达式返回的 JSON 对象会合并到请求里，"
+                "reasoningLevel 代表当前档位。"
+                "示例：{\"reasoning_effort\": reasoningLevel}。留空 = 清除已有映射。"
+            ),
+            bg=CARD,
+            fg=MUTED,
+            font=fonts["small"],
+            anchor="w",
+            justify="left",
+            wraplength=660,
+        ).pack(fill="x", pady=(4, 0))
+        rmap = row.get("reasoningMap")
+        if rmap is None and isinstance(meta.get("reasoningMap"), (dict, str)):
+            rmap = meta["reasoningMap"]
+        self._map_initial = ""
+        if isinstance(rmap, str) and rmap.strip():
+            self._map_initial = rmap
+            self.map_text.insert("1.0", rmap)
+        elif isinstance(rmap, dict) and rmap:
+            self._map_initial = json.dumps(rmap, ensure_ascii=False, indent=2)
+            self.map_text.insert("1.0", self._map_initial)
+
+        btn_row = tk.Frame(outer, bg=CARD)
+        btn_row.pack(fill="x", pady=(20, 0))
+        self.error_var = tk.StringVar(value="")
+        self.error_label = tk.Label(
+            btn_row, textvariable=self.error_var, bg=CARD, fg=ERR, font=fonts["small"], anchor="w"
+        )
+        self.error_label.pack(side="left", fill="x", expand=True)
+        # R6-1：取消按钮必须 pack（原先只创建未 pack，底栏只剩保存）；P2-24：去字距
+        self._white_btn(btn_row, "保存", self._save)
+        self.app._ghost_btn(btn_row, "取消", self.destroy, pad=16).pack(side="right", padx=(0, 8))
+        self.bind("<Escape>", lambda _e: self.destroy())
+        self.grab_set()
+
+    def _check(self, parent: tk.Frame, text: str, var: tk.BooleanVar, disabled: bool = False) -> None:
+        """经典勾选框（推理等级组专用——R6-7 豁免清单明确不 chips 化）。"""
+        item = tk.Checkbutton(
+            parent,
+            text=text,
+            variable=var,
+            bg=CARD,
+            fg=MUTED if disabled else TEXT,
+            selectcolor=INPUT,
+            activebackground=CARD,
+            activeforeground=TEXT,
+            font=self.app.fonts["ui"],
+            bd=0,
+            highlightthickness=0,
+        )
+        item.pack(side="left", padx=(0, 14))
+        if disabled:
+            item.configure(state="disabled")
+
+    def _chip(self, parent: tk.Frame, text: str, var: tk.BooleanVar, disabled: bool = False) -> None:
+        """R6-7：官方 chips 形态——indicatoron=0 胶囊，选中底 #454545、描边加深，
+        高≈48 物理px（32 逻辑）。disabled 项（文本始终）保持描边 + MUTED 字。
+        Windows 的 Checkbutton(indicatoron=0) 不渲染 highlight 环（R6 验收实锤），
+        描边用外层 1px Frame 容器实现。"""
+        wrap = tk.Frame(parent, bg=LINE, highlightthickness=0, bd=0)
+        wrap.pack(side="left", padx=(0, 8))
+        chip = tk.Checkbutton(
+            wrap,
+            text=text,
+            variable=var,
+            bg=CARD,
+            fg=MUTED if disabled else TEXT,
+            selectcolor=CHIP_ON,
+            activebackground=CARD,
+            activeforeground=TEXT,
+            disabledforeground=MUTED,
+            font=self.app.fonts["ui"],
+            bd=0,
+            highlightthickness=0,
+            indicatoron=0,
+            padx=13,
+            pady=4,
+            cursor="arrow" if disabled else "hand2",
+        )
+        chip.pack(padx=1, pady=1)
+
+        def refresh(*_args) -> None:
+            try:
+                if var.get():
+                    chip.configure(bg=CHIP_ON, activebackground=CHIP_ON)
+                    wrap.configure(bg=CHIP_ON_LINE)
+                else:
+                    chip.configure(bg=CARD, activebackground=CARD)
+                    wrap.configure(bg=LINE)
+            except tk.TclError:
+                pass
+
+        var.trace_add("write", refresh)
+        refresh()
+        if disabled:
+            chip.configure(state="disabled")
+
+    def _sync_custom_ph(self) -> None:
+        # 自定义档输入框占位：有值隐藏、无值显示
+        try:
+            if self.custom_var.get():
+                self.custom_ph.place_forget()
+            else:
+                self.custom_ph.place(x=14, rely=0.5, y=-1, anchor="w")
+        except tk.TclError:
+            pass
+
+    def _dialog_note(self, text: str, kind: str = "err") -> None:
+        # P0-3/U-2：弹窗内反馈——错误红字、成功绿字（同一行标签换色）
+        self.error_var.set(text)
+        try:
+            self.error_label.configure(fg=ERR if kind == "err" else OK)
+        except tk.TclError:
+            pass
+
+    def _white_btn(self, parent: tk.Frame, text: str, command) -> tk.Button:
+        item = tk.Button(
+            parent,
+            text=text,
+            command=command,
+            bg=WHITE,
+            fg=WHITE_FG,
+            activebackground="#FFFFFF",
+            activeforeground=WHITE_FG,
+            bd=0,
+            font=self.app.fonts["ui"],
+            padx=18,
+            pady=0,  # R6-4：实测 pady=0 → 47px（官方 41-47，原 pady=6 → 59px）
+            cursor="hand2",
+        )
+        item.pack(side="right")
+        return item
+
+    def _add_custom_level(self, *_args) -> None:
+        raw = self.custom_var.get()
+        name = raw.strip()
+        if not name:
+            self._dialog_note("先在左侧输入要添加的档名")
+            return
+        if MODEL_ID_CTRL_RE.search(raw):
+            self._dialog_note("档位名不能包含换行或控制字符")
+            return
+        if len(name) > 60:
+            self._dialog_note("档位名过长（最多 60 字）")
+            return
+        if name in self.reason_vars:
+            self._dialog_note(f"「{name}」已经存在，不用重复添加")
+            return
+        if name in set(REASONING_LABELS.values()):
+            # C2-4：与标准档中文标签重名会把字面「低」写进 values，直接拒绝
+            self._dialog_note(f"「{name}」是标准档的显示名，请直接勾选对应档位")
+            return
+        var = tk.BooleanVar(value=True)
+        self.reason_vars[name] = var
+        self._check(self._last_check_row, name, var)
+        self.custom_var.set("")
+        self._dialog_note(f"已添加自定义档「{name}」，记得勾选要保留的档位", "ok")
+
+    def _save(self) -> None:
+        row = self.row
+        model_id = MODEL_ID_CTRL_RE.sub("", self.id_entry.get()).strip()[:200]
+        if not model_id:
+            self.error_var.set("模型 ID 不能为空")
+            return
+        # P2-25/A2-3：与行内共用同一谓词（isdecimal + int>0），"+5"/"1_000"/"²" 一律拒
+        ctx_raw = self.ctx_entry.get().strip()
+        if ctx_raw and not valid_positive_int(ctx_raw):
+            self.error_var.set("上下文窗口需为正整数")
+            return
+        max_raw = self.max_entry.get().strip()
+        if max_raw and not valid_positive_int(max_raw):
+            self.error_var.set("最大输出需为正整数")
+            return
+        # R6-2：map 是单个 CEL 表达式字符串——文本原样保存，不做 JSON 解析
+        # （CEL 语法校验本轮明确不做）；留空 = 清除已有映射。
+        map_text = self.map_text.get("1.0", "end").strip()
+        rmap = map_text or None
+        checked = [level for level, var in self.reason_vars.items() if var.get()]
+        if rmap and not checked:
+            self.error_var.set("推理参数映射需要至少勾选一个推理档位")
+            return
+        # 写回行控件与元数据；真正的文件写入仍由主窗口「保存」统一完成
+        row["id"].set(model_id)
+        row["ctx"].set(ctx_raw)
+        row["max"].set(max_raw)
+        row["checked"] = checked
+        row["extras"] = {
+            "image": bool(self.var_image.get()),
+            "video": bool(self.var_video.get()),
+            "pdf": bool(self.var_pdf.get()),
+            "structured": bool(self.var_structured.get()),
+            "webSearch": bool(self.var_web.get()),
+            "midConv": bool(self.var_midconv.get()),
+        }
+        row["extrasChanged"] = True
+        row["reasoningMap"] = rmap
+        row["mapChanged"] = True
+        self.app._sync_default_drop(row, source="checks")
+        self.app._update_name_col()
+        update_vis = row.get("update_vis_badge")
+        if update_vis is not None:
+            update_vis(bool(row["extras"]["image"]))
+        self.app.show_summary()
+        self.app.flash_status(
+            f"{model_id} · 已在编辑弹窗更新；点主窗口「保存」后写入配置",
+            "guide",
+        )
+        self.destroy()
+
+
 class App(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
@@ -552,7 +1001,10 @@ class App(tk.Tk):
         mono = "Cascadia Mono" if "Cascadia Mono" in available else "Consolas"
         self.fonts = {
             "ui": tkfont.Font(family=family, size=11),
-            "title": tkfont.Font(family=family, size=18, weight="bold"),
+            # R6-3：主窗/弹窗标题拆档。校准实测（150% DPI，ink≈linespace×35/47）：
+            # h1=22pt → linespace 58px → 字高≈43px 对齐官方；h2=11pt bold → 字高≈21px。
+            "h1": tkfont.Font(family=family, size=22, weight="bold"),
+            "h2": tkfont.Font(family=family, size=11, weight="bold"),
             "small": tkfont.Font(family=family, size=9),
             "name": tkfont.Font(family=family, size=12),
             "mono": tkfont.Font(family=family, size=11),
@@ -602,7 +1054,7 @@ class App(tk.Tk):
         header = tk.Frame(self, bg=BG)
         header.grid(row=0, column=0, rowspan=2, sticky="ew", padx=36, pady=(22, 0))
         header.columnconfigure(0, weight=1)
-        tk.Label(header, text="模型设置", bg=BG, fg=WHITE, font=self.fonts["title"]).grid(
+        tk.Label(header, text="模型设置", bg=BG, fg=WHITE, font=self.fonts["h1"]).grid(
             row=0, column=0, sticky="w", pady=(2, 4)
         )
         tk.Label(
@@ -611,7 +1063,7 @@ class App(tk.Tk):
             bg=BG,
             fg=MUTED,
             font=self.fonts["ui"],
-        ).grid(row=1, column=0, sticky="w", pady=(4, 16))
+        ).grid(row=1, column=0, sticky="w", pady=(36, 16))  # R6-3：标题-副标题间距对齐官方（≈59px）
         actions = tk.Frame(header, bg=BG)
         actions.grid(row=1, column=1, sticky="e")
         reload_btn = self._ghost_btn(actions, "↻", self.reload_click, pad=8)
@@ -621,13 +1073,15 @@ class App(tk.Tk):
 
         card = tk.Frame(self, bg=CARD, highlightbackground=LINE, highlightthickness=1)
         card.grid(row=2, column=0, sticky="nsew", padx=36, pady=(0, 0))
-        card.columnconfigure(1, weight=1)
+        card.columnconfigure(2, weight=1)
         card.rowconfigure(0, weight=1)
         self.card_ref = card  # P0-1：弹层底缘上翻以卡片为界
 
         rail = tk.Frame(card, bg=SIDE, width=320)
         rail.grid(row=0, column=0, sticky="nsew")
         rail.grid_propagate(False)
+        # R6-6：rail 内部列撑满 320px，行 fill="x" 后行宽 = 320-16（rail_box padx）= 304px
+        rail.columnconfigure(0, weight=1)
         rail.rowconfigure(1, weight=1)
         tk.Label(
             rail,
@@ -640,8 +1094,11 @@ class App(tk.Tk):
         self.rail_box = tk.Frame(rail, bg=SIDE)
         self.rail_box.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 14))
 
+        # R6-5：rail 与右栏之间补 1px #414141 竖分隔线（官方 rail 右缘有同色分隔线）
+        tk.Frame(card, bg=LINE, width=1).grid(row=0, column=1, sticky="ns")
+
         right = tk.Frame(card, bg=CARD)
-        right.grid(row=0, column=1, sticky="nsew")
+        right.grid(row=0, column=2, sticky="nsew")
         right.columnconfigure(0, weight=1)
         right.rowconfigure(3, weight=1, minsize=280)
 
@@ -696,7 +1153,8 @@ class App(tk.Tk):
 
         tools = tk.Frame(right, bg=CARD)
         tools.grid(row=2, column=0, sticky="ew", padx=32, pady=(12, 8))
-        tk.Label(tools, text="模型列表", bg=CARD, fg=MUTED, font=self.fonts["small"]).pack(
+        # P2-23：「模型列表」标签升为 ui 字号（官方 14px）
+        tk.Label(tools, text="模型列表", bg=CARD, fg=MUTED, font=self.fonts["ui"]).pack(
             side="left"
         )
         add_btn = self._ghost_btn(tools, "+  添加模型", self.add_blank_row)
@@ -725,18 +1183,19 @@ class App(tk.Tk):
         self.canvas.bind("<Configure>", self._on_canvas_configure)
 
         self.columns = tk.Frame(self.rows_frame, bg=CARD)
+        # 图标列（删除/编辑/测试）不再放文字列头：图标语义自明，悬停有提示。
         del_head = tk.Frame(self.columns, bg=CARD, width=COL_DEL_W, height=22)
         del_head.pack_propagate(False)
         del_head.pack(side="right")
-        # R4-P0-1：新增「测试」列头（思考与删除之间）
         test_head = tk.Frame(self.columns, bg=CARD, width=COL_DEL_W, height=22)
         test_head.pack_propagate(False)
         test_head.pack(side="right", padx=(0, 8))
-        tk.Label(
-            test_head, text="测试", bg=CARD, fg=MUTED, font=self.fonts["small"]
-        ).pack(expand=True)
-        # side=right 的 pack 是从右往左堆：思考深度、默认档位、最大输出、上下文。
-        self._drop_head("思考深度", REASON_HEAD_TIP)
+        edit_head = tk.Frame(self.columns, bg=CARD, width=COL_DEL_W, height=22)
+        edit_head.pack_propagate(False)
+        edit_head.pack(side="right", padx=(0, 8))
+        # side=right 的 pack 是从右往左堆：推理等级、默认档位、最大输出、上下文。
+        # U-3：统一命名「思考深度」→「推理等级」。
+        self._drop_head("推理等级", REASON_HEAD_TIP)
         self._drop_head("默认档位", DEFAULT_HEAD_TIP)
         for head_text in ("最大输出", "上下文"):
             field_head = tk.Frame(self.columns, bg=CARD, width=self.col_field_w, height=22)
@@ -814,8 +1273,9 @@ class App(tk.Tk):
         return box
 
     def _label(self, parent: tk.Frame, text: str, row: int) -> None:
+        # P2-23/R6-11：表单标签升为 ui 字号（官方 14px），MUTED 色不变
         tk.Label(
-            parent, text=text, bg=CARD, fg=MUTED, font=self.fonts["small"], anchor="w"
+            parent, text=text, bg=CARD, fg=MUTED, font=self.fonts["ui"], anchor="w"
         ).grid(row=row, column=0, sticky="w", pady=(6, 3))
 
     def _entry(self, parent: tk.Frame, var: tk.StringVar, row: int, mono: bool = False) -> tk.Entry:
@@ -833,7 +1293,7 @@ class App(tk.Tk):
             font=self.fonts["ui"],
             highlightthickness=0,
         )
-        entry.grid(row=0, column=0, sticky="ew", ipady=7, padx=(10, 0))
+        entry.grid(row=0, column=0, sticky="ew", ipady=7, padx=(14, 0))
         return entry
 
     def _key_field(self, parent: tk.Frame, row: int) -> None:
@@ -851,7 +1311,7 @@ class App(tk.Tk):
             show="•",
             highlightthickness=0,
         )
-        self.key_entry.grid(row=0, column=0, sticky="ew", ipady=7, padx=(10, 0))
+        self.key_entry.grid(row=0, column=0, sticky="ew", ipady=7, padx=(14, 0))
         self.key_shown = False
         eye = tk.Canvas(box, width=20, height=14, bg=INPUT, highlightthickness=0, cursor="hand2")
         eye.create_oval(2, 3, 18, 11, outline=MUTED)
@@ -872,7 +1332,7 @@ class App(tk.Tk):
             bd=0,
             font=self.fonts["ui"],
             padx=14,
-            pady=7,
+            pady=0,  # R6-4：实测 pady=0 → 47px（官方 41-47，原 pady=7 → 61px）
             cursor="hand2",
         )
 
@@ -888,7 +1348,7 @@ class App(tk.Tk):
             bd=0,
             font=self.fonts["ui"],
             padx=pad,
-            pady=7,
+            pady=0,  # R6-4：与白钮同档（实测 47px）
             cursor="hand2",
             highlightthickness=1,
             highlightbackground=LINE2,
@@ -1017,8 +1477,14 @@ class App(tk.Tk):
             self.select_provider(self.providers[0]["providerId"])
 
     def _rail_signature(self) -> tuple:
+        # P2-21：签名含 enabled——供应商禁用状态变化时左栏要重绘状态点
         return tuple(
-            (item.get("providerId"), item.get("providerName") or "") for item in self.providers
+            (
+                item.get("providerId"),
+                item.get("providerName") or "",
+                bool(item.get("enabled", True)),
+            )
+            for item in self.providers
         )
 
     def render_rail(self) -> None:
@@ -1052,7 +1518,12 @@ class App(tk.Tk):
                 anchor="w",
             )
             name.pack(side="left", padx=8, fill="x", expand=True)
-            dot = tk.Label(inner, text="●", bg=SIDE, fg=GREEN, font=self.fonts["small"])
+            # P2-21：状态点两态——供应商 enabled=False → 灰点，否则绿点
+            provider_enabled = item.get("enabled", True) is not False
+            dot = tk.Label(
+                inner, text="●", bg=SIDE, fg=GREEN if provider_enabled else MUTED,
+                font=self.fonts["small"],
+            )
             dot.pack(side="right")
             stored = {"frame": row, "inner": inner, "icon": icon, "name": name, "dot": dot}
             if pid:
@@ -1156,9 +1627,9 @@ class App(tk.Tk):
 
         id_var = tk.StringVar(value=rec.get("id") or "")
         ctx_var = tk.StringVar(value="" if rec.get("contextWindow") in (None, "") else str(rec.get("contextWindow")))
-        max_var = tk.StringVar(
-            value="" if rec.get("maxOutputTokens") in (None, "") else str(rec.get("maxOutputTokens"))
-        )
+        # A2-5：记录原始最大输出文本——清空已有值再保存 = 删除 maxOutputTokens 的依据
+        max_original = "" if rec.get("maxOutputTokens") in (None, "") else str(rec.get("maxOutputTokens"))
+        max_var = tk.StringVar(value=max_original)
         checked = self._levels_from_rec(rec)
         default_level = str(rec.get("reasoningDefault") or "")
         reason_var = tk.StringVar(value=self._reason_summary(checked))
@@ -1169,6 +1640,7 @@ class App(tk.Tk):
             "id": id_var,
             "ctx": ctx_var,
             "max": max_var,
+            "max_original": max_original,
             "reason": reason_var,
             "checked": checked,
             "default": default_var,
@@ -1191,7 +1663,7 @@ class App(tk.Tk):
             default_var,
             [DEFAULT_FOLLOW],
             fonts=self.fonts,
-            command=lambda _v, r=row: self._sync_default_drop(r, source="default"),
+            command=lambda v, r=row: self._on_default_picked(r, v),
         )
         default_drop.pack(fill="both", expand=True)
         reason_box = tk.Frame(right, bg=ROW, width=self.col_drop_w, height=self._field_h)
@@ -1217,37 +1689,24 @@ class App(tk.Tk):
         test_box = tk.Frame(right, bg=ROW, width=COL_DEL_W, height=col_h)
         test_box.pack_propagate(False)
         test_box.pack(side="left", fill="y", padx=(0, 8))
-        test_btn = tk.Button(
-            test_box,
-            text="测试",
-            command=lambda r=row: self.on_test_row(r),
-            bg=ROW,
-            fg=MUTED,
-            activebackground=HOVER,
-            activeforeground=TEXT,
-            disabledforeground=MUTED,
-            bd=0,
-            font=self.fonts["small"],
-            padx=8,
-            cursor="hand2",
+        row["test_btn"] = IconBtn(
+            test_box, "test", lambda r=row: self.on_test_row(r),
+            "测试连接：用该行模型发一次最小请求", self.fonts,
         )
-        test_btn.pack(expand=True)
-        row["test_btn"] = test_btn
+        row["test_btn"].pack(expand=True)
+        edit_box = tk.Frame(right, bg=ROW, width=COL_DEL_W, height=col_h)
+        edit_box.pack_propagate(False)
+        edit_box.pack(side="left", fill="y", padx=(0, 8))
+        IconBtn(
+            edit_box, "edit", lambda r=row: self.on_edit_row(r),
+            "编辑模型配置（输入类型 / 能力 / 推理等级 / 参数映射）", self.fonts,
+        ).pack(expand=True)
         del_box = tk.Frame(right, bg=ROW, width=COL_DEL_W, height=col_h)
         del_box.pack_propagate(False)
         del_box.pack(side="left", fill="y")
-        tk.Button(
-            del_box,
-            text="删除",
-            command=lambda f=frame: self.remove_row(f),
-            bg=ROW,
-            fg=MUTED,
-            activebackground=HOVER,
-            activeforeground=TEXT,
-            bd=0,
-            font=self.fonts["small"],
-            padx=8,
-            cursor="hand2",
+        IconBtn(
+            del_box, "delete", lambda f=frame: self.remove_row(f),
+            "删除该行", self.fonts,
         ).pack(expand=True)
         row["ctx_box"] = ctx_box
         row["max_box"] = max_box
@@ -1269,11 +1728,10 @@ class App(tk.Tk):
         ctx_badge = tk.Label(
             badges, text="", bg=GHOST, fg=MUTED, font=self.fonts["small"], padx=6, pady=1
         )
-        vis_badge = None
+        vis_badge = tk.Label(
+            badges, text="视觉", bg=GHOST, fg=MUTED, font=self.fonts["small"], padx=6, pady=1
+        )
         if rec.get("supportsImage"):
-            vis_badge = tk.Label(
-                badges, text="视觉", bg=GHOST, fg=MUTED, font=self.fonts["small"], padx=6, pady=1
-            )
             vis_badge.pack(side="left")
 
         def fmt_badge(value: str) -> str:
@@ -1294,13 +1752,23 @@ class App(tk.Tk):
             ctx_badge.pack_forget()
             if text:
                 ctx_badge.configure(text=text)
-                if vis_badge is not None:
+                if vis_badge.winfo_manager():
                     ctx_badge.pack(side="left", padx=(0, 6), before=vis_badge)
                 else:
                     ctx_badge.pack(side="left", padx=(0, 6))
 
+        def update_vis_badge(show: bool) -> None:
+            # 编辑弹窗切换「图片」输入类型后同步视觉徽章。
+            if show:
+                vis_badge.pack(side="left")
+            else:
+                vis_badge.pack_forget()
+            sync_badge()
+
         ctx_var.trace_add("write", sync_badge)
         sync_badge()
+        row["vis_badge"] = vis_badge
+        row["update_vis_badge"] = update_vis_badge
 
         self.rows.append(row)
         self._sync_default_drop(row, source="load")
@@ -1461,12 +1929,7 @@ class App(tk.Tk):
             ("最大输出", row["max"], row["max_box"]),
         ):
             raw = var.get().strip()
-            bad = False
-            if raw:
-                try:
-                    bad = int(raw) <= 0
-                except ValueError:
-                    bad = True
+            bad = bool(raw) and not valid_positive_int(raw)
             self._mark_num_box(box, bad)
             if bad and error is None:
                 error = self._num_error(field, model_id)
@@ -1519,33 +1982,65 @@ class App(tk.Tk):
         checked = [str(item) for item in row.get("checked") or []]
         row["reason"].set(self._reason_summary(checked))
         default_drop = row.get("default_drop")
-        if not checked:
-            row["default"].set(DEFAULT_FOLLOW)
-            if default_drop is not None:
-                default_drop.set_options([DEFAULT_FOLLOW])
-                default_drop.set_enabled(False)
-            return
-        labels = [self._level_label(level, DEFAULT_FOLLOW) for level in checked]
-        options = [DEFAULT_FOLLOW, *labels]
+        # 默认档位始终可直接选：选项含全部标准档，选了还没勾的档由 _on_default_picked 自动补勾。
+        options = [DEFAULT_FOLLOW]
+        seen: set[str] = set()
+        for level in [*REASONING_LADDER, *checked]:
+            if level in seen:
+                continue
+            seen.add(level)
+            options.append(REASONING_LABELS.get(level, level))
         current = row["default"].get()
         current_level = self._label_to_level(current, DEFAULT_FOLLOW)
         if current_level and current_level not in checked and source != "default":
+            # 勾选变化把原默认档移出了思考深度：收回「随最高勾选」
             row["default"].set(DEFAULT_FOLLOW)
         elif current and current not in options:
-            row["default"].set(DEFAULT_FOLLOW)
+            options.append(current)
         if default_drop is not None:
             default_drop.set_options(options)
             default_drop.set_enabled(True)
 
+    def _on_default_picked(self, row: dict, label: str) -> None:
+        level = self._label_to_level(label, DEFAULT_FOLLOW)
+        checked = [str(item) for item in row.get("checked") or []]
+        if level and level not in checked:
+            checked.append(level)
+            checked.sort(
+                key=lambda item: REASONING_LADDER.index(item)
+                if item in REASONING_LADDER
+                else len(REASONING_LADDER)
+            )
+            row["checked"] = checked
+        if not level:
+            row["default"].set(DEFAULT_FOLLOW)
+        else:
+            row["default"].set(self._level_label(level, DEFAULT_FOLLOW))
+        self._sync_default_drop(row, source="default")
+        ordered = self._ordered_checks(row)
+        labels = [REASONING_LABELS.get(item, item) for item in ordered]
+        model_id = row["id"].get().strip() or "该模型"
+        if not labels:
+            # U-7：全没勾时不输出悬空的「聊天可切换 」
+            self.flash_status(f"{model_id} · 默认档位：未勾选任何档，保存后不写入推理等级", "guide")
+            return
+        tail = REASONING_LABELS.get(level, level) if level else "勾选里的最高档"
+        self.flash_status(
+            f"{model_id} · 默认档位：新建会话用「{tail}」；聊天可切换 {' / '.join(labels)}，保存后生效",
+            "guide",
+        )
+
     def _ordered_checks(self, row: dict) -> list[str]:
-        """勾选结果：标准档按梯序，非标准档保持原相对顺序，默认档固定在末尾。"""
-        selected = {str(item) for item in row.get("checked") or []}
+        """勾选结果：标准档按梯序，非标准档保持勾选列表原相对顺序，默认档固定在末尾。"""
+        checked_list = [str(item) for item in row.get("checked") or []]
+        selected = set(checked_list)
         original = [str(item) for item in (row["meta"].get("reasoningValues") or [])]
         ordered = [level for level in REASONING_LADDER if level in selected]
         for item in original:
             if item in selected and item not in ordered:
                 ordered.append(item)
-        for item in selected:
+        # A2-6：补位循环按 row["checked"] 列表序（set 迭代序跨进程不稳定）
+        for item in checked_list:
             if item not in ordered:
                 ordered.append(item)
         default = self._label_to_level(row["default"].get(), DEFAULT_FOLLOW)
@@ -1557,7 +2052,7 @@ class App(tk.Tk):
     def _reason_note(self, row: dict) -> str:
         ordered = self._ordered_checks(row)
         if not ordered:
-            return "未勾选：不写入思考深度"
+            return "未勾选：不写入推理等级"
         labels = [REASONING_LABELS.get(level, level) for level in ordered]
         return "聊天时可切换：" + " / ".join(labels)
 
@@ -1575,7 +2070,7 @@ class App(tk.Tk):
         inner.pack(fill="both", expand=True, padx=1, pady=1)
         tk.Label(
             inner,
-            text="勾选这个模型支持的档，可跳档。只保存勾上的。",
+            text="勾选这个模型支持的档即可，不必连续；只保存勾上的。",
             bg=POPUP_BG,
             fg=MUTED,
             font=self.fonts["small"],
@@ -1609,10 +2104,11 @@ class App(tk.Tk):
             labels = [REASONING_LABELS.get(level, level) for level in self._ordered_checks(row)]
             model_id = row["id"].get().strip() or "该模型"
             if not labels:
-                self.flash_status(f"{model_id} · 思考深度未勾选：不写入配置，保存后生效", "guide")
+                # U-7：修「不写入配置却生效」的自相矛盾
+                self.flash_status(f"已清空 {model_id} 的推理等级：保存后从配置移除", "guide")
                 return
             self.flash_status(
-                f"{model_id} · 思考深度：聊天时可切换 {' / '.join(labels)}，保存后生效",
+                f"{model_id} · 推理等级：聊天时可切换 {' / '.join(labels)}，保存后生效",
                 "guide",
             )
 
@@ -1643,6 +2139,11 @@ class App(tk.Tk):
         popup.lift()
         popup.focus_force()
         popup.bind("<Escape>", lambda _e: Popup.close())
+        # C2-2：与 Drop 弹层同机制——焦点离开 120ms 后复查，不在弹层子树内即关闭
+        popup.bind(
+            "<FocusOut>",
+            lambda _e: popup.after(120, lambda: Drop._close_if_focus_outside(popup)),
+        )
 
     def remove_row(self, frame: tk.Frame) -> None:
         self.rows = [row for row in self.rows if row["frame"] is not frame]
@@ -1682,25 +2183,42 @@ class App(tk.Tk):
                 ctx = int(ctx_raw) if ctx_raw else self._catalog_ctx(model_id)
             except ValueError as exc:
                 raise SyncError(self._num_error("上下文", model_id)) from exc
-            try:
-                max_out = int(max_raw) if max_raw else row["meta"].get("maxOutputTokens")
-            except ValueError as exc:
-                raise SyncError(self._num_error("最大输出", model_id)) from exc
+            if max_raw:
+                try:
+                    max_out = int(max_raw)
+                except ValueError as exc:
+                    raise SyncError(self._num_error("最大输出", model_id)) from exc
+                # A2-5：与原始文本比较——改动（含清空）才算 changed
+                max_changed = max_raw != str(row.get("max_original") or "")
+            else:
+                # A2-5：原值被清空 → maxChanged=True + None（sync 删 maxOutputTokens）；
+                # 从未填过 → 不写放大，保持 meta 原值
+                max_changed = bool(row.get("max_original"))
+                max_out = None if max_changed else row["meta"].get("maxOutputTokens")
             catalog = next((item for item in self.catalog if item.get("id") == model_id), {})
-            original_max = row["meta"].get("maxOutputTokens")
             original_values = [str(item) for item in (row["meta"].get("reasoningValues") or [])]
             new_values = self._ordered_checks(row)
             changed = new_values != original_values
+            supports_image = bool(
+                catalog.get("supportsImage")
+                or row["meta"].get("supportsImage")
+                or (row.get("extras") or {}).get("image")
+            )
+            # C2-5：携带改名前 id，sync 侧按它找到旧规则复用（保留 enabled 等）
+            orig_id = str(row["meta"].get("id") or "")
             rec = {
                 "id": model_id,
+                "origId": orig_id if orig_id and orig_id != model_id else None,
                 "contextWindow": ctx,
                 "maxOutputTokens": max_out,
-                "maxChanged": (max_out or None) != (original_max or None),
+                "maxChanged": max_changed,
                 "reasoning": new_values[-1] if new_values else "",
                 "reasoningChanged": changed,
-                "supportsImage": bool(
-                    catalog.get("supportsImage") or row["meta"].get("supportsImage")
-                ),
+                "supportsImage": supports_image,
+                "extras": row.get("extras"),
+                "extrasChanged": bool(row.get("extrasChanged")),
+                "reasoningMap": row.get("reasoningMap"),
+                "mapChanged": bool(row.get("mapChanged")),
             }
             if not changed:
                 rec["reasoningValues"] = row["meta"].get("reasoningValues")
@@ -1758,24 +2276,30 @@ class App(tk.Tk):
 
     # ---- R4-P0-1：模型级测试——每行「测试」按钮用该行模型 ID 发一次最小真实请求 ----
 
+    def on_edit_row(self, row: dict) -> None:
+        Popup.close()
+        ModelEditDialog(self, row)
+
     def on_test_row(self, row: dict) -> None:
         if self.fetching:
             return
         Popup.close()
         model_id = row["id"].get().strip()
         if not model_id:
-            # model_id 为空：不发请求（sync 层同样兜底），提示先填模型
-            self.flash_status("请先添加模型", "err")
+            # U-6：这一行明明存在，报「请先添加模型」会误导用户去找添加按钮
+            self.flash_status("先给这一行选模型，再测试。", "err")
             return
         btn = row.get("test_btn")
         if btn is not None:
             try:
-                btn.configure(state="disabled")
+                btn.set_enabled(False)
             except tk.TclError:
                 return
         base_url = self.base_url.get().strip()
         api_key = self.api_key.get().strip()
         api_type = self.api_type.get().strip()
+        # C2-7：快照发起时的供应商，回调时校验——测试期间切走不误报到新供应商页面
+        test_provider = self.provider_id.get()
         self.flash_status(f"正在测试连接：{model_id}…", "hold")
 
         def work() -> None:
@@ -1798,13 +2322,13 @@ class App(tk.Tk):
                     "reason": f"内部错误: {exc}",
                 }
             try:
-                self.after(0, lambda: self.on_test_row_done(row, model_id, result))
+                self.after(0, lambda: self.on_test_row_done(row, model_id, result, test_provider))
             except RuntimeError:
                 pass  # 窗口已关/主循环未跑：线程为 daemon，静默退出
 
         threading.Thread(target=work, daemon=True).start()
 
-    def on_test_row_done(self, row: dict, model_id: str, result: dict) -> None:
+    def on_test_row_done(self, row: dict, model_id: str, result: dict, provider: str = "") -> None:
         if self.closed:
             return
         # 行可能在测试进行中被删除（D5 场景）：按钮恢复失败可容忍，状态照常反馈
@@ -1812,13 +2336,16 @@ class App(tk.Tk):
         if btn is not None:
             try:
                 if btn.winfo_exists():
-                    btn.configure(state="normal")
+                    btn.set_enabled(True)
             except tk.TclError:
                 pass
         try:
             if not self.winfo_exists():
                 return
         except tk.TclError:
+            return
+        if provider and provider != self.provider_id.get():
+            # C2-7：供应商已切换——只恢复图标，结果不再打扰当前供应商的页面
             return
         elapsed = float(result.get("elapsed") or 0.0)
         reason = str(result.get("reason") or "")
@@ -1881,6 +2408,16 @@ class App(tk.Tk):
             if error:
                 self.flash_status(error, "err")
                 return
+        # C2-1：重复模型 ID 红字拦截——原先是 collected_models 先到先得静默丢行
+        dup_seen: set[str] = set()
+        for row in self.rows:
+            model_id = MODEL_ID_CTRL_RE.sub("", row["id"].get()).strip()[:200]
+            if not model_id:
+                continue
+            if model_id in dup_seen:
+                self.flash_status(f"模型 {model_id} 重复，请合并或删除多余行", "err")
+                return
+            dup_seen.add(model_id)
         blank = sum(1 for row in self.rows if not MODEL_ID_CTRL_RE.sub("", row["id"].get()).strip())
         try:
             models = self.collected_models()

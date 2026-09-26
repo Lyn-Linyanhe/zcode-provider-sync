@@ -33,9 +33,11 @@ API_TYPES = {
     "anthropic-messages": "anthropic-messages",
 }
 
-REASONING_LADDER = ["low", "medium", "high", "xhigh", "max", "ultra"]
+# R6-16：官方梯含 minimal（chat.toolbar.thoughtLevel.value.minimal=`极低`），头插补全。
+REASONING_LADDER = ["minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
 REASONING_LABELS = {
     "": "未设置",
+    "minimal": "极低",
     "low": "低",
     "medium": "中",
     "high": "高",
@@ -316,8 +318,14 @@ def model_detail(data: dict[str, Any], provider_id: str, model_id: str) -> dict[
         "reasoningValues": None,
         "reasoningFloor": "",
         "reasoningDefault": "",
+        "reasoningMap": None,
         "maxOutputTokens": None,
         "supportsImage": False,
+        "inputVideo": False,
+        "inputPdf": False,
+        "capStructured": False,
+        "capWebSearch": False,
+        "capMidConv": False,
         "enabled": True,
     }
     for rule in model_rules(data):
@@ -328,6 +336,11 @@ def model_detail(data: dict[str, Any], provider_id: str, model_id: str) -> dict[
         detail["contextWindow"] = props.get("contextWindow")
         fmt = props.get("inputFormat") or {}
         detail["supportsImage"] = bool(fmt.get("supportsImage"))
+        detail["inputVideo"] = bool(fmt.get("supportsVideo"))
+        detail["inputPdf"] = bool(fmt.get("supportsPdf"))
+        detail["capStructured"] = bool(props.get("supportsJsonSchemaOutput"))
+        detail["capWebSearch"] = bool(props.get("supportsNativeWebSearch"))
+        detail["capMidConv"] = bool(props.get("supportsMidConversationSystem"))
         if cfg.get("enabled") is False:
             detail["enabled"] = False
         option_specs = cfg.get("optionSpecs") or {}
@@ -338,6 +351,14 @@ def model_detail(data: dict[str, Any], provider_id: str, model_id: str) -> dict[
             detail["reasoning"] = reasoning_from_values(detail["reasoningValues"])
             detail["reasoningFloor"] = floor_from_values(detail["reasoningValues"])
             detail["reasoningDefault"] = default_from_values(detail["reasoningValues"])
+        rmap = specs.get("map")
+        # R6-2/A2：ZCode 的 map 是「单个 CEL 表达式字符串」（app.asar schema Tv=t.string()，
+        # builtin 101 处全是 str）；旧版本工具写过 dict——读取侧两者都兼容，
+        # dict 仅用于「未改动」保存时原样带回（_upsert_model_rule），不再新增。
+        if isinstance(rmap, str) and rmap.strip():
+            detail["reasoningMap"] = rmap
+        elif isinstance(rmap, dict) and rmap:
+            detail["reasoningMap"] = rmap
         max_spec = option_specs.get("maxOutputTokens") or {}
         if isinstance(max_spec.get("max"), (int, float)) and max_spec["max"] > 0:
             detail["maxOutputTokens"] = int(max_spec["max"])
@@ -772,9 +793,43 @@ def _upsert_model_rule(rules: list[dict[str, Any]], provider_id: str, rec: dict[
         props.setdefault("inputFormat", {})["supportsImage"] = True
     specs = cfg.setdefault("optionSpecs", {})
     if reasoning_values:
-        specs["reasoningLevel"] = {"values": list(reasoning_values)}
+        # A2-1：整体替换 spec 时必须把旧 spec 的 map 原样带回（非 mapChanged 的保存
+        # 不碰 map——否则任何别的行改动都会把该模型已配的映射抹掉）。
+        # R6-2：map 的合法形态是「单个 CEL 表达式字符串」；旧 dict 原样带回不加工。
+        new_spec: dict[str, Any] = {"values": list(reasoning_values)}
+        if not rec.get("mapChanged"):
+            old_spec = specs.get("reasoningLevel")
+            if isinstance(old_spec, dict) and "map" in old_spec:
+                new_spec["map"] = old_spec["map"]
+        specs["reasoningLevel"] = new_spec
     elif rec.get("reasoningChanged") and "reasoningLevel" in specs:
         del specs["reasoningLevel"]
+    # 编辑弹窗写入的扩展字段：输入类型 / 模型能力 / 推理参数映射（map 只能挂在有 values 的档位下）
+    if rec.get("extrasChanged"):
+        extras = rec.get("extras") or {}
+        fmt = props.setdefault("inputFormat", {})
+        fmt["supportsImage"] = bool(extras.get("image"))
+        fmt["supportsVideo"] = bool(extras.get("video"))
+        fmt["supportsPdf"] = bool(extras.get("pdf"))
+        props["supportsJsonSchemaOutput"] = bool(extras.get("structured"))
+        props["supportsNativeWebSearch"] = bool(extras.get("webSearch"))
+        props["supportsMidConversationSystem"] = bool(extras.get("midConv"))
+    if rec.get("mapChanged"):
+        # R6-2：map 写入「单个 CEL 表达式字符串」（ZCode schema Tv=t.string()，strict）。
+        # 兼容桥：旧 rec 里的 dict（历史版本工具产物）转成 JSON 对象字面量字符串——
+        # 对象字面量本身是合法 CEL，求值结果即该对象，配置可被 strict schema 接受。
+        rmap = rec.get("reasoningMap")
+        rl = specs.get("reasoningLevel")
+        map_text = ""
+        if isinstance(rmap, str):
+            map_text = rmap.strip()
+        elif isinstance(rmap, dict) and rmap:
+            map_text = json.dumps(rmap, ensure_ascii=False)
+        if map_text:
+            if isinstance(rl, dict) and rl.get("values"):
+                rl["map"] = map_text
+        elif isinstance(rl, dict) and "map" in rl:
+            del rl["map"]
     if rec.get("maxChanged"):
         max_out = rec.get("maxOutputTokens")
         try:
@@ -871,6 +926,20 @@ def save_provider(
     cfg["modelOrder"] = list(model_ids)
 
     existing_rules = model_rules(data)
+    # C2-5：重命名模型先按 origId 原地改名——沿用旧规则的 enabled/config 等全部键，
+    # 只换 modelId；改名后的规则自然落进 keep_pairs，不会先被 keep 过滤当孤儿删掉。
+    renames = {
+        str(rec.get("origId") or ""): rec["id"]
+        for rec in cleaned
+        if rec.get("origId") and str(rec.get("origId")) != rec["id"]
+    }
+    if renames:
+        for rule in existing_rules:
+            if rule.get("providerId") != provider_id:
+                continue
+            mid = str(rule.get("modelId") or "")
+            if mid in renames:
+                rule["modelId"] = renames[mid]
     keep_pairs = {(provider_id, mid) for mid in model_ids}
     existing_rules[:] = [
         rule
