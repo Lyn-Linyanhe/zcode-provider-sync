@@ -1,0 +1,33 @@
+name: Bug 报告
+description: 工具崩溃、行为不对、显示异常
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 现象是什么、你期望发生什么。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开工具，选择供应商 …
+        2. 点「…」
+        3. 出现 …
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: 环境
+      placeholder: "Windows 版本 / Python 版本 / ZCode 版本"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截图或补充
+      description: 有截图更好。注意：不要贴出真实 API Key。

@@ -1,0 +1,28 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 语法与静态检查
+        run: |
+          python -m py_compile app.py sync.py tools/refresh_builtin_models.py
+      - name: 数据文件有效性与加载自检
+        run: |
+          python - <<'PY'
+          import json
+          data = json.load(open("builtin_model_rules.json", encoding="utf-8"))
+          assert data.get("zcodeSnapshot"), "内置库缺少 zcodeSnapshot"
+          import sys
+          sys.path.insert(0, ".")
+          import sync  # 导入即验证依赖面仍是纯标准库
+          print("ok", len(data["zcodeSnapshot"]), "rules")
+          PY
