@@ -9,11 +9,13 @@ import re
 import sys
 import threading
 import tkinter as tk
+from pathlib import Path
 from tkinter import font as tkfont
 
 from sync import (
     API_TYPES,
     DEFAULT_CONFIG,
+    DEFAULT_CONTEXT_WINDOW,
     REASONING_LABELS,
     REASONING_LADDER,
     SyncError,
@@ -80,6 +82,64 @@ RELOAD_TIP = "重新读取 ZCode 配置文件；当前窗口里未保存的修�
 EMPTY_PROVIDERS_GUIDE = "还没有自定义供应商：点右上角「+ 添加供应商」，填好 Base URL 和 API Key 后获取模型列表。"
 # R4-P1-10 [C-12]：模型 ID 输入侧剥离换行/控制字符
 MODEL_ID_CTRL_RE = re.compile(r"[\r\n\t\x00-\x1f\x7f]+")
+
+BUILTIN_DB_PATH = Path(__file__).with_name("builtin_model_rules.json")
+ZCODE_BUILTIN_PATH = Path("D:/zcode/resources/config/provider/zcode-builtin.json")
+_builtin_rules_cache: list[tuple[re.Pattern, dict]] | None = None
+
+
+def _load_builtin_rules() -> list[tuple[re.Pattern, dict]]:
+    """市面模型基础配置库：ZCode 内置规则（优先用安装目录的活文件，缺失用快照）
+    + 项目补充规则（OpenRouter 实测参数）。按特异性排序——字面字符多者优先，
+    兜底 catch-all（".*"）自然垫底且由调用方跳过。"""
+    global _builtin_rules_cache
+    if _builtin_rules_cache is not None:
+        return _builtin_rules_cache
+    db: dict = {}
+    try:
+        db = json.loads(BUILTIN_DB_PATH.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        db = {}
+    zrules = None
+    try:
+        zrules = json.loads(ZCODE_BUILTIN_PATH.read_text(encoding="utf-8"))["config"][
+            "modelConfigRules"
+        ]["modelRules"]
+    except Exception:  # noqa: BLE001
+        zrules = db.get("zcodeSnapshot") or []
+    merged = []
+    for rule in [*zrules, *(db.get("supplemental") or [])]:
+        try:
+            pattern = rule["modelMatch"]
+            compiled = re.compile(pattern)
+        except (KeyError, TypeError, re.error):
+            continue
+        specificity = len(re.sub(r"[^0-9A-Za-z]", "", pattern))
+        merged.append((specificity, compiled, rule.get("config") or {}))
+    merged.sort(key=lambda item: -item[0])
+    _builtin_rules_cache = [(compiled, cfg) for _, compiled, cfg in merged]
+    return _builtin_rules_cache
+
+
+def _builtin_model_info(model_id: str) -> dict:
+    """按 id 在内置库（ZCode 规则 + 补充表）里匹配模型家族，返回基本数据。
+    跳过 catch-all（".*"）：全匹配的兜底数值不参与精确填充。"""
+    if not model_id:
+        return {}
+    for compiled, cfg in _load_builtin_rules():
+        if compiled.pattern == ".*":
+            break
+        if compiled.match(model_id):
+            props = cfg.get("properties") or {}
+            specs = cfg.get("optionSpecs") or {}
+            fmt = props.get("inputFormat") or {}
+            values = (specs.get("reasoningLevel") or {}).get("values")
+            return {
+                "contextWindow": props.get("contextWindow"),
+                "maxOutputTokens": (specs.get("maxOutputTokens") or {}).get("max"),
+                "reasoningValues": values if isinstance(values, list) and values else None,
+            }
+    return {}
 
 API_TYPE_OPTIONS = (
     ("chat", "Chat Completions (/v1/chat/completions)"),
@@ -1816,7 +1876,7 @@ class App(tk.Tk):
                 values,
                 fonts=self.fonts,
                 searchable=True,
-                command=lambda _v, r=row: self.on_model_picked(r["id"], r["ctx"]),
+                command=lambda _v, r=row: self.on_model_picked(r),
                 empty_fn=self._model_drop_empty_text,
                 placeholder="选择模型",
             )
@@ -1852,6 +1912,9 @@ class App(tk.Tk):
             row["name_entry"] = entry
             row["name_ph"] = ph
             row["name_mode"] = "entry"
+            # 手动输入（无获取流程）也走同一条填充链：回车或焦点离开按 id 带入基本数据
+            entry.bind("<Return>", lambda _e, r=row: self._autofill_row(r))
+            entry.bind("<FocusOut>", lambda _e, r=row: self._autofill_row(r))
             self._sync_name_ph(row)
 
     def _sync_name_ph(self, row: dict) -> None:
@@ -1941,14 +2004,129 @@ class App(tk.Tk):
         if error:
             self.flash_status(error, "err")
 
-    def on_model_picked(self, id_var: tk.StringVar, ctx_var: tk.StringVar) -> None:
-        ctx = self._catalog_ctx(id_var.get())
-        if ctx:
-            ctx_var.set(str(ctx))
+    def _known_model_info(self, model_id: str) -> dict:
+        """按 id 在全部供应商的已配置模型里比对（字段级取第一个非空）：
+        上下文 / 最大输出 / 推理档位 / 视觉。数据来自内存中的供应商摘要，不读文件。"""
+        info: dict = {}
+        if not model_id:
+            return info
+        for provider in self.providers:
+            for rec in provider.get("models") or []:
+                if rec.get("id") != model_id:
+                    continue
+                for key in ("contextWindow", "maxOutputTokens", "reasoningValues"):
+                    if not info.get(key) and rec.get(key) not in (None, ""):
+                        info[key] = rec[key]
+                if rec.get("supportsImage"):
+                    info["supportsImage"] = True
+        return info
+
+    @staticmethod
+    def _fmt_tokens(value) -> str:
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            return str(value)
+        if number >= 1_000_000:
+            return f"{number // 1_000_000}M"
+        return f"{number // 1000}K" if number >= 1000 else str(number)
+
+    def on_model_picked(self, row: dict) -> None:
+        """选定模型后自动带入基本数据（填充链见 _fill_row_info）。"""
+        self._fill_row_info(row)
         self._update_name_col()
         self.show_summary()
 
-    # ---- 思考深度勾选 / 默认档：只改变量，不写配置 ----
+    def _fill_row_info(self, row: dict) -> list[str]:
+        """基本数据填充链（按 id）：已知配置（跨供应商比对）→ 内置模型库 → 目录元数据 → 默认值。
+        行内已填的字段一律不动，只补空。返回带入项的描述列表。"""
+        model_id = row["id"].get().strip()
+        if not model_id:
+            return []
+        known = self._known_model_info(model_id)
+        builtin = _builtin_model_info(model_id)
+        catalog_ctx = self._catalog_ctx(model_id)
+        filled: list[str] = []
+        used_known = False
+        used_builtin = False
+        used_catalog = False
+        if not row["ctx"].get().strip():
+            ctx = (
+                known.get("contextWindow")
+                or builtin.get("contextWindow")
+                or catalog_ctx
+                or DEFAULT_CONTEXT_WINDOW
+            )
+            row["ctx"].set(str(int(ctx)))
+            filled.append(f"上下文 {self._fmt_tokens(ctx)}")
+            used_known = used_known or bool(known.get("contextWindow"))
+            used_builtin = used_builtin or (not known.get("contextWindow") and bool(builtin.get("contextWindow")))
+            used_catalog = used_catalog or (
+                not known.get("contextWindow") and not builtin.get("contextWindow") and bool(catalog_ctx)
+            )
+        if not row["max"].get().strip() and known.get("maxOutputTokens"):
+            row["max"].set(str(int(known["maxOutputTokens"])))
+            filled.append(f"最大输出 {self._fmt_tokens(known['maxOutputTokens'])}")
+            used_known = True
+        elif not row["max"].get().strip() and builtin.get("maxOutputTokens"):
+            row["max"].set(str(int(builtin["maxOutputTokens"])))
+            filled.append(f"最大输出 {self._fmt_tokens(builtin['maxOutputTokens'])}")
+            used_builtin = True
+        if not row["checked"] and (known.get("reasoningValues") or builtin.get("reasoningValues")):
+            values = known.get("reasoningValues") or builtin.get("reasoningValues")
+            row["checked"] = [str(item) for item in values]
+            self._sync_default_drop(row, source="load")
+            labels = [REASONING_LABELS.get(level, level) for level in self._ordered_checks(row)]
+            filled.append("推理等级 " + " / ".join(labels))
+            used_known = used_known or bool(known.get("reasoningValues"))
+            used_builtin = used_builtin or (not known.get("reasoningValues") and bool(builtin.get("reasoningValues")))
+        if filled:
+            if used_known:
+                source = "已知配置"
+            elif used_builtin:
+                source = "内置模型库"
+            elif used_catalog:
+                source = "服务商目录"
+            else:
+                source = "默认值"
+            self.flash_status(f"{model_id} · 已按{source}带入：{'；'.join(filled)}", "guide")
+        elif known or builtin.get("contextWindow") or catalog_ctx:
+            self.flash_status(f"{model_id} · 行内已有信息，未改动", "guide")
+        return filled
+
+    def _autofill_row(self, row: dict) -> None:
+        if not row["id"].get().strip():
+            return
+        self._fill_row_info(row)
+
+    def _autofill_rows_from_catalog(self) -> None:
+        """获取成功后按 id 补全已有行的空字段（已有值不动，只补空；不逐行弹提示）。"""
+        for row in self.rows:
+            model_id = row["id"].get().strip()
+            if not model_id:
+                continue
+            known = self._known_model_info(model_id)
+            builtin = _builtin_model_info(model_id)
+            catalog_ctx = self._catalog_ctx(model_id)
+            if not row["ctx"].get().strip():
+                ctx = (
+                    known.get("contextWindow")
+                    or builtin.get("contextWindow")
+                    or catalog_ctx
+                    or DEFAULT_CONTEXT_WINDOW
+                )
+                row["ctx"].set(str(int(ctx)))
+            if not row["max"].get().strip():
+                max_out = known.get("maxOutputTokens") or builtin.get("maxOutputTokens")
+                if max_out:
+                    row["max"].set(str(int(max_out)))
+            if not row["checked"]:
+                values = known.get("reasoningValues") or builtin.get("reasoningValues")
+                if values:
+                    row["checked"] = [str(item) for item in values]
+                    self._sync_default_drop(row, source="load")
+
+    # ---- 推理等级勾选 / 默认档：只改变量，不写配置 ----
 
     @staticmethod
     def _level_label(level: str, empty_label: str) -> str:
@@ -2371,10 +2549,14 @@ class App(tk.Tk):
             self.refresh_row_catalog()
             if not self.rows:
                 self.add_blank_row()
+            # 获取成功后按 id 补全已有行的空字段：已知配置 → 目录元数据 → 默认值
+            self._autofill_rows_from_catalog()
             self._update_name_col()
             # 空行不自动带入目录第一项，由用户在下拉里选。
             self.flash_status(
-                f"已拉取 {len(records)} 个候选模型：点模型 ID 右侧 ▾ 搜索选择", "guide"
+                f"已拉取 {len(records)} 个候选模型：点模型 ID 右侧 ▾ 搜索选择；"
+                "行内空缺的上下文/最大输出/推理等级会按已知配置和内置模型库自动补全",
+                "guide",
             )
         finally:
             # R4-P1-2：fetching/按钮复位放 finally，任何路径不再永久卡死

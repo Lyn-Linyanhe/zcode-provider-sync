@@ -1,0 +1,6080 @@
+{
+ "asOf": "2026-09-27",
+ "sources": [
+  "openrouter.ai/api/v1/models（公开端点，直连抓取）",
+  "D:/zcode/resources/config/provider/zcode-builtin.json（ZCode 内置快照）"
+ ],
+ "zcodeSnapshot": [
+  {
+   "modelMatch": ".*",
+   "config": {
+    "enabled": true,
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsText": true,
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": false
+     },
+     "outputFormat": {
+      "supportsText": true
+     },
+     "supportsToolCall": true,
+     "supportsJsonSchemaOutput": false,
+     "supportsNativeWebSearch": false,
+     "supportsMidConversationSystem": false,
+     "requiresMfjsToolSchema": false
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     },
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ],
+      "map": "{}"
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*\\[1m\\]",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000
+    }
+   }
+  },
+  {
+   "modelMatch": ".*(?:ox-alpha|glm-x-preview-f|x-preview-f-free).*",
+   "config": {
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-5(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*GLM-5\\.2(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*GLM-5-Turbo(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-5\\.3(?:-flash)?(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-5\\.3-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-5\\.1(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-5\\.1-highspeed(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-5v-turbo(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.7(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.7-flashx(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.7-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.6(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.5(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.5-air(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.6v(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.6v-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.6v-flashx(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.1v-thinking-flashx(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4\\.1v-thinking-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4-flashx-250414(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4-flash-250414(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm-4v-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 16384,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 1024
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*codegeex-4(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*charglm-4(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 8192,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 4096
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*emohaa(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 8192,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 4096
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt-5\\.6(?:-(?:sol|terra|luna))?(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "none",
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt-5\\.3-codex(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt-6-astra(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt-5\\.4(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "none",
+       "low",
+       "medium",
+       "high",
+       "xhigh"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt-5\\.4-pro(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "medium",
+       "high",
+       "xhigh"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt-5\\.4-mini(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "none",
+       "low",
+       "medium",
+       "high",
+       "xhigh"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt-5\\.4-nano(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "none",
+       "low",
+       "medium",
+       "high",
+       "xhigh"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude-(?:fable|opus|sonnet)-5(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude-haiku-4[.-]5(?:-20251001)?(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude-(?:fable|mythos)-5[.-]1(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok-4\\.6(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 500000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": false
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "medium",
+       "high",
+       "xhigh"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok-build-0\\.1(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 256000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": false
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok-4\\.3(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsAudio": false,
+      "supportsPdf": false
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi-k3(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*k3(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*k3-256k(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi-k2\\.7-code(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi-k2\\.6(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi-k2\\.5(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*moonshot-v1-8k(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 8192,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*moonshot-v1-32k(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 32768,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*moonshot-v1-128k(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*moonshot-v1-8k-vision-preview(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 8192,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*moonshot-v1-32k-vision-preview(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 32768,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*moonshot-v1-128k-vision-preview(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M3(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M2(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M2\\.7(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M2\\.7-highspeed(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M2\\.5(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M2\\.5-highspeed(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M2\\.1(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*MiniMax-M2\\.1-highspeed(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek-v4-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 384000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek-v4-pro(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 384000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 384000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek-v4[.-]1-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "low",
+       "high",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 384000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8-(?:max|flash)(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "low",
+       "medium",
+       "xhigh"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5-plus(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3-max(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen-plus(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3-vl-plus(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.7-max(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.7-plus(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": true
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.7-flash(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.6-plus(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.6-flash(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.7-max-2026-06-08(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8-omni-flash(?:-20\\d{2}(?:-?\\d{2}){2})?(?:[:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsAudio": true
+     },
+     "supportsJsonSchemaOutput": false
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "none",
+       "minimal",
+       "low",
+       "medium",
+       "high",
+       "xhigh",
+       "max"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*mimo-v2\\.5(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsAudio": true
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*mimo-v2\\.5-pro(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsAudio": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*mimo-v2-pro(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*mimo-v2-omni(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*mimo-v2-flash(?:[.\\-:/\\[].*)?",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "reasoningLevel": {
+      "values": [
+       "disabled",
+       "enabled"
+      ]
+     },
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  }
+ ],
+ "supplemental": [
+  {
+   "modelMatch": ".*claude\\-fable\\-5(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-fable-5",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-fable\\-5\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-fable-5.1",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-haiku\\-4\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-haiku-4.5",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-opus\\-4\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-opus-4.1",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-opus\\-4\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-opus-4.5",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-opus\\-4\\.6(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-opus-4.6",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-opus\\-4\\.7(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-opus-4.7",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-opus\\-4\\.8(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-opus-4.8",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-opus\\-5(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-opus-5",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-opus\\-5\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-opus-5.5",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-sonnet\\-4(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-sonnet-4",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-sonnet\\-4\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-sonnet-4.5",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 64000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-sonnet\\-4\\.6(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-sonnet-4.6",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*claude\\-sonnet\\-5(?:[.\\-:/\\[].*)?",
+   "vendor": "anthropic",
+   "display": "claude-sonnet-5",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*ernie\\-4\\.5\\-vl\\-424b\\-a47b(?:[.\\-:/\\[].*)?",
+   "vendor": "baidu",
+   "display": "ernie-4.5-vl-424b-a47b",
+   "config": {
+    "properties": {
+     "contextWindow": 123000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*ui\\-tars\\-1\\.5\\-7b(?:[.\\-:/\\[].*)?",
+   "vendor": "bytedance",
+   "display": "ui-tars-1.5-7b",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 2048
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-chat(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-chat",
+   "config": {
+    "properties": {
+     "contextWindow": 163840,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-chat\\-v3\\-0324(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-chat-v3-0324",
+   "config": {
+    "properties": {
+     "contextWindow": 163840,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 147456
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-chat\\-v3\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-chat-v3.1",
+   "config": {
+    "properties": {
+     "contextWindow": 163840,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-r1(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-r1",
+   "config": {
+    "properties": {
+     "contextWindow": 64000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-r1\\-0528(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-r1-0528",
+   "config": {
+    "properties": {
+     "contextWindow": 163840,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-r1\\-distill\\-llama\\-70b(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-r1-distill-llama-70b",
+   "config": {
+    "properties": {
+     "contextWindow": 8192,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 7372
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v3\\.1\\-terminus(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v3.1-terminus",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v3\\.2(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v3.2",
+   "config": {
+    "properties": {
+     "contextWindow": 163840,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v3\\.2\\-exp(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v3.2-exp",
+   "config": {
+    "properties": {
+     "contextWindow": 163840,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v4(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v4",
+   "config": {
+    "properties": {
+     "contextWindow": 1024000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 384000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v4\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v4-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1024000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 384000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v4\\-flash\\-0731(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v4-flash-0731",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 943718
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v4\\-flash\\-vision\\-exp(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v4-flash-vision-exp",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 262144
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v4\\-pro\\-0813(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v4-pro-0813",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 943718
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*deepseek\\-v4\\.1\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "deepseek",
+   "display": "deepseek-v4.1-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 384000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-2\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-2.5",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-2\\.5\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-2.5-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65535
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-2\\.5\\-flash\\-image(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-2.5-flash-image",
+   "config": {
+    "properties": {
+     "contextWindow": 32768,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 8192
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-2\\.5\\-flash\\-lite(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-2.5-flash-lite",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65535
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-2\\.5\\-pro\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-2.5-pro-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\-flash\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3-flash-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\-pro\\-image(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3-pro-image",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\-pro\\-image\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3-pro-image-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.1\\-flash\\-image(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.1-flash-image",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.1\\-flash\\-image\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.1-flash-image-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 58982
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.1\\-flash\\-lite(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.1-flash-lite",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.1\\-flash\\-lite\\-image(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.1-flash-lite-image",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 58982
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.1\\-flash\\-lite\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.1-flash-lite-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.1\\-pro\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.1-pro-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.1\\-pro\\-preview\\-customtools(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.1-pro-preview-customtools",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.5\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.5-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.5\\-flash\\-lite(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.5-flash-lite",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.6\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.6-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.7\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.7-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemini\\-3\\.8\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemini-3.8-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemma\\-2\\-27b\\-it(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemma-2-27b-it",
+   "config": {
+    "properties": {
+     "contextWindow": 8192,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 2048
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemma\\-3\\-12b\\-it(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemma-3-12b-it",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemma\\-3\\-27b\\-it(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemma-3-27b-it",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 117964
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemma\\-3\\-4b\\-it(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemma-3-4b-it",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemma\\-4\\-26b\\-a4b\\-it(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemma-4-26b-a4b-it",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gemma\\-4\\-31b\\-it(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "gemma-4-31b-it",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*lyria\\-3\\-clip\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "lyria-3-clip-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*lyria\\-3\\-pro\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "google",
+   "display": "lyria-3-pro-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-3\\.1\\-70b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-3.1-70b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-3\\.1\\-8b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-3.1-8b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 117964
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-3\\.2\\-1b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-3.2-1b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 60000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 54000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-3\\.2\\-3b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-3.2-3b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 117964
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-3\\.3\\-70b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-3.3-70b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-4\\-maverick(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-4-maverick",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-4\\-scout(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-4-scout",
+   "config": {
+    "properties": {
+     "contextWindow": 327680,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*llama\\-guard\\-4\\-12b(?:[.\\-:/\\[].*)?",
+   "vendor": "meta-llama",
+   "display": "llama-guard-4-12b",
+   "config": {
+    "properties": {
+     "contextWindow": 163840,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-01(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-01",
+   "config": {
+    "properties": {
+     "contextWindow": 1000192,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 900172
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-m1(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-m1",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 40000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-m2(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-m2",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-m2\\-her(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-m2-her",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 2048
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-m2\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-m2.1",
+   "config": {
+    "properties": {
+     "contextWindow": 204800,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-m2\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-m2.5",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-m2\\.7(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-m2.7",
+   "config": {
+    "properties": {
+     "contextWindow": 196608,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 176947
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*minimax\\-m3(?:[.\\-:/\\[].*)?",
+   "vendor": "minimax",
+   "display": "minimax-m3",
+   "config": {
+    "properties": {
+     "contextWindow": 524288,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 512000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi\\-k2(?:[.\\-:/\\[].*)?",
+   "vendor": "moonshotai",
+   "display": "kimi-k2",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi\\-k2\\-0905(?:[.\\-:/\\[].*)?",
+   "vendor": "moonshotai",
+   "display": "kimi-k2-0905",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi\\-k2\\-thinking(?:[.\\-:/\\[].*)?",
+   "vendor": "moonshotai",
+   "display": "kimi-k2-thinking",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi\\-k2\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "moonshotai",
+   "display": "kimi-k2.5",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi\\-k2\\.6(?:[.\\-:/\\[].*)?",
+   "vendor": "moonshotai",
+   "display": "kimi-k2.6",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi\\-k2\\.7\\-code(?:[.\\-:/\\[].*)?",
+   "vendor": "moonshotai",
+   "display": "kimi-k2.7-code",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*kimi\\-k3(?:[.\\-:/\\[].*)?",
+   "vendor": "moonshotai",
+   "display": "kimi-k3",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 943718
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-3\\.5\\-turbo(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-3.5-turbo",
+   "config": {
+    "properties": {
+     "contextWindow": 16385,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 4096
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-3\\.5\\-turbo\\-16k(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-3.5-turbo-16k",
+   "config": {
+    "properties": {
+     "contextWindow": 16385,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 4096
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4",
+   "config": {
+    "properties": {
+     "contextWindow": 8191,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 4096
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4\\-turbo(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4-turbo",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 4096
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4.1",
+   "config": {
+    "properties": {
+     "contextWindow": 1047576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4\\.1\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4.1-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 1047576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4\\.1\\-nano(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4.1-nano",
+   "config": {
+    "properties": {
+     "contextWindow": 1047576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4o(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4o",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4o\\-2024\\-05\\-13(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4o-2024-05-13",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 4096
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4o\\-2024\\-08\\-06(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4o-2024-08-06",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4o\\-2024\\-11\\-20(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4o-2024-11-20",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4o\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4o-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-4o\\-mini\\-2024\\-07\\-18(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-4o-mini-2024-07-18",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\-image(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5-image",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\-image\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5-image-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\-nano(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5-nano",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.1",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.1\\-codex(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.1-codex",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.1\\-codex\\-max(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.1-codex-max",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.1\\-codex\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.1-codex-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.2(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.2",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.2\\-chat(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.2-chat",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.2\\-codex(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.2-codex",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.3\\-codex(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.3-codex",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.4(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.4",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.4\\-image\\-2(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.4-image-2",
+   "config": {
+    "properties": {
+     "contextWindow": 272000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.4\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.4-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.4\\-nano(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.4-nano",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.5",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.6\\-luna(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.6-luna",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.6\\-luna\\-pro(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.6-luna-pro",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.6\\-sol(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.6-sol",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.6\\-sol\\-pro(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.6-sol-pro",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.6\\-terra(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.6-terra",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-5\\.6\\-terra\\-pro(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-5.6-terra-pro",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-6\\-astra(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-6-astra",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-6\\-astra\\-pro(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-6-astra-pro",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-6\\-luna(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-6-luna",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-6\\-luna\\-pro(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-6-luna-pro",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-6\\-sol(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-6-sol",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-6\\-sol\\-pro(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-6-sol-pro",
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-audio(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-audio",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-audio\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-audio-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-chat\\-latest(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-chat-latest",
+   "config": {
+    "properties": {
+     "contextWindow": 400000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-oss\\-120b(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-oss-120b",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 117964
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-oss\\-20b(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-oss-20b",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 117964
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*gpt\\-oss\\-safeguard\\-20b(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "gpt-oss-safeguard-20b",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*o1(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "o1",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 100000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*o3(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "o3",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 100000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*o3\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "o3-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 100000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*o3\\-mini\\-high(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "o3-mini-high",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 100000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*o4\\-mini(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "o4-mini",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 100000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*o4\\-mini\\-high(?:[.\\-:/\\[].*)?",
+   "vendor": "openai",
+   "display": "o4-mini-high",
+   "config": {
+    "properties": {
+     "contextWindow": 200000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 100000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen\\-2\\.5\\-72b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen-2.5-72b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 32768,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen\\-2\\.5\\-7b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen-2.5-7b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 32768,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 29491
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen\\-2\\.5\\-coder\\-32b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen-2.5-coder-32b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 32768,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 29491
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen\\-plus(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen-plus",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen\\-plus\\-2025\\-07\\-28(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen-plus-2025-07-28",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen2\\.5\\-vl\\-72b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen2.5-vl-72b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 128000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 115200
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-14b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-14b",
+   "config": {
+    "properties": {
+     "contextWindow": 40960,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-235b\\-a22b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-235b-a22b",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 8192
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-235b\\-a22b\\-2507(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-235b-a22b-2507",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-235b\\-a22b\\-thinking\\-2507(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-235b-a22b-thinking-2507",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 117964
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-30b\\-a3b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-30b-a3b",
+   "config": {
+    "properties": {
+     "contextWindow": 40960,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-30b\\-a3b\\-instruct\\-2507(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-30b-a3b-instruct-2507",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-30b\\-a3b\\-thinking\\-2507(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-30b-a3b-thinking-2507",
+   "config": {
+    "properties": {
+     "contextWindow": 81920,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-32b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-32b",
+   "config": {
+    "properties": {
+     "contextWindow": 40960,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-8b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-8b",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 8192
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-coder(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-coder",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-coder\\-30b\\-a3b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-coder-30b-a3b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-coder\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-coder-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-coder\\-next(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-coder-next",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-coder\\-plus(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-coder-plus",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-max(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-max",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-max\\-thinking(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-max-thinking",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-next\\-80b\\-a3b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-next-80b-a3b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-next\\-80b\\-a3b\\-thinking(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-next-80b-a3b-thinking",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-vl\\-235b\\-a22b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-vl-235b-a22b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-vl\\-235b\\-a22b\\-thinking(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-vl-235b-a22b-thinking",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-vl\\-30b\\-a3b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-vl-30b-a3b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-vl\\-30b\\-a3b\\-thinking(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-vl-30b-a3b-thinking",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-vl\\-32b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-vl-32b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-vl\\-8b\\-instruct(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-vl-8b-instruct",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\-vl\\-8b\\-thinking(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3-vl-8b-thinking",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-122b\\-a10b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-122b-a10b",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-27b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-27b",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-35b\\-a3b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-35b-a3b",
+   "config": {
+    "properties": {
+     "contextWindow": 256000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-397b\\-a17b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-397b-a17b",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-9b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-9b",
+   "config": {
+    "properties": {
+     "contextWindow": 256000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-flash\\-02\\-23(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-flash-02-23",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-plus\\-02\\-15(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-plus-02-15",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.5\\-plus\\-20260420(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.5-plus-20260420",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.6\\-27b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.6-27b",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 81920
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.6\\-35b\\-a3b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.6-35b-a3b",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 235929
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.6\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.6-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.6\\-max\\-preview(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.6-max-preview",
+   "config": {
+    "properties": {
+     "contextWindow": 262144,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.6\\-plus(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.6-plus",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.7\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.7-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 65536
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.7\\-max(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.7-max",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.7\\-plus(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.7-plus",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8\\-2\\.4t\\-a95b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.8-2.4t-a95b",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8\\-27b(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.8-27b",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.8-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8\\-max\\-0902(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.8-max-0902",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8\\-max\\-prime(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.8-max-prime",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*qwen3\\.8\\-omni\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "qwen",
+   "display": "qwen3.8-omni-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok\\-4\\.20(?:[.\\-:/\\[].*)?",
+   "vendor": "x-ai",
+   "display": "grok-4.20",
+   "config": {
+    "properties": {
+     "contextWindow": 2000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 1800000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok\\-4\\.20\\-multi\\-agent(?:[.\\-:/\\[].*)?",
+   "vendor": "x-ai",
+   "display": "grok-4.20-multi-agent",
+   "config": {
+    "properties": {
+     "contextWindow": 2000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 1800000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok\\-4\\.3(?:[.\\-:/\\[].*)?",
+   "vendor": "x-ai",
+   "display": "grok-4.3",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 900000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok\\-4\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "x-ai",
+   "display": "grok-4.5",
+   "config": {
+    "properties": {
+     "contextWindow": 500000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 450000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok\\-4\\.6(?:[.\\-:/\\[].*)?",
+   "vendor": "x-ai",
+   "display": "grok-4.6",
+   "config": {
+    "properties": {
+     "contextWindow": 500000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 450000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok\\-4\\.7(?:[.\\-:/\\[].*)?",
+   "vendor": "x-ai",
+   "display": "grok-4.7",
+   "config": {
+    "properties": {
+     "contextWindow": 500000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 450000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*grok\\-build\\-0\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "x-ai",
+   "display": "grok-build-0.1",
+   "config": {
+    "properties": {
+     "contextWindow": 256000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 230400
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-4\\.5(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-4.5",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-4\\.5\\-air(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-4.5-air",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 98304
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-4\\.5v(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-4.5v",
+   "config": {
+    "properties": {
+     "contextWindow": 65536,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-4\\.6(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-4.6",
+   "config": {
+    "properties": {
+     "contextWindow": 198000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 16384
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-4\\.6v(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-4.6v",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 32768
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-4\\.7(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-4.7",
+   "config": {
+    "properties": {
+     "contextWindow": 202752,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-4\\.7\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-4.7-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 131072,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 117964
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5",
+   "config": {
+    "properties": {
+     "contextWindow": 198000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5\\-turbo(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5-turbo",
+   "config": {
+    "properties": {
+     "contextWindow": 202752,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5\\.1(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5.1",
+   "config": {
+    "properties": {
+     "contextWindow": 202752,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5\\.2(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5.2",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5\\.3(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5.3",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 943718
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5\\.3\\-flash(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5.3-flash",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5\\.3\\-flashx(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5.3-flashx",
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5\\.3\\-prime(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5.3-prime",
+   "config": {
+    "properties": {
+     "contextWindow": 1000000,
+     "inputFormat": {
+      "supportsImage": false,
+      "supportsVideo": false,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": ".*glm\\-5v\\-turbo(?:[.\\-:/\\[].*)?",
+   "vendor": "z-ai",
+   "display": "glm-5v-turbo",
+   "config": {
+    "properties": {
+     "contextWindow": 202752,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true,
+      "supportsPdf": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 131072
+     }
+    }
+   }
+  }
+ ]
+}
