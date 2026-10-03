@@ -44,6 +44,11 @@ REASONING_LABELS = {
     "xhigh": "极高",
     "max": "最高",
     "ultra": "极致",
+    # ZCode 内置规则里的非梯档位：界面显示中文，存储/传参仍是英文原值
+    "none": "无",
+    "disabled": "禁用",
+    "enabled": "启用",
+    "off": "关闭",
 }
 
 NON_CHAT_RE = re.compile(
