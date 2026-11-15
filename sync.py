@@ -22,6 +22,10 @@ from typing import Any
 DEFAULT_CONFIG = Path.home() / ".zcode" / "v2" / "provider_config.json"
 DEFAULT_CONTEXT_WINDOW = 128000
 REQUEST_TIMEOUT_SEC = 30
+# 中转站的网络类失败是瞬时的（实测同一 URL 交替 403/超时/200）：退避重试。
+# HTTP 状态码不重试——那是服务端明确回答。
+FETCH_RETRY_ATTEMPTS = 3
+FETCH_RETRY_BACKOFF_SEC = 1.5
 
 API_TYPES = {
     "chat": "openai-chat-completions",
@@ -471,25 +475,41 @@ def build_headers(api_type: str, api_key: str) -> dict[str, str]:
 
 
 def http_get_json(url: str, headers: dict[str, str]) -> tuple[int, Any, str]:
+    """GET 一个 JSON 端点。返回 (状态码, 解析后的 payload 或 None, 摘录文本)。
+
+    网络类失败（超时 / SSL 握手抖动 / 连接被拒）在真实中转站上是**瞬时**的——
+    实测同一 URL 交替出现 403 / 超时 / 200。这里对网络类错误做退避重试（3 次），
+    HTTP 状态码（401/403/404…）不重试：那是服务端明确回答，重试无意义。
+    """
     req = urllib.request.Request(url, headers=headers, method="GET")
     context = ssl.create_default_context()
-    try:
-        with urllib.request.urlopen(
-            req, timeout=REQUEST_TIMEOUT_SEC, context=context
-        ) as resp:
-            raw = resp.read()
-            status = getattr(resp, "status", 200)
-    except urllib.error.HTTPError as exc:
-        raw = exc.read() if exc.fp else b""
-        snippet = raw[:300].decode("utf-8", "replace")
-        return exc.code, None, snippet
-    except urllib.error.URLError as exc:
-        raise SyncError(f"请求失败 {url}: {exc.reason}") from exc
-    text = raw.decode("utf-8", "replace")
-    try:
-        return status, json.loads(text), text[:300]
-    except json.JSONDecodeError:
-        return status, None, text[:300]
+    last_error: BaseException | None = None
+    for attempt in range(FETCH_RETRY_ATTEMPTS):
+        try:
+            with urllib.request.urlopen(
+                req, timeout=REQUEST_TIMEOUT_SEC, context=context
+            ) as resp:
+                raw = resp.read()
+                status = getattr(resp, "status", 200)
+            text = raw.decode("utf-8", "replace")
+            try:
+                return status, json.loads(text), text[:300]
+            except json.JSONDecodeError:
+                return status, None, text[:300]
+        except urllib.error.HTTPError as exc:
+            raw = exc.read() if exc.fp else b""
+            snippet = raw[:300].decode("utf-8", "replace")
+            return exc.code, None, snippet
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_error = exc
+            if attempt + 1 < FETCH_RETRY_ATTEMPTS:
+                time.sleep(FETCH_RETRY_BACKOFF_SEC * (attempt + 1))
+                continue
+    reason = getattr(last_error, "reason", last_error)
+    raise SyncError(
+        f"连接不上 {url}（已重试 {FETCH_RETRY_ATTEMPTS} 次）：{reason}\n"
+        "多为网络抖动/代理未开，稍后重试或先在工具里点「测试连接」确认该端点可达。"
+    ) from last_error
 
 
 def extract_model_records(payload: Any) -> list[dict[str, Any]]:
@@ -548,17 +568,26 @@ def extract_model_records(payload: Any) -> list[dict[str, Any]]:
 def fetch_models(base_url: str, api_key: str, api_type: str) -> tuple[str, list[dict[str, Any]]]:
     headers = build_headers(api_type, api_key)
     errors: list[str] = []
+    hints: list[str] = []
     for url in candidate_model_urls(base_url):
         status, payload, snippet = http_get_json(url, headers)
         if status != 200 or payload is None:
-            errors.append(f"{url} -> HTTP {status} {snippet!r}")
+            errors.append(f"{url} → HTTP {status} {snippet.strip()[:160]!r}")
+            if status in (401, 403):
+                hints.append("Key 无效、未授权，或被 Cloudflare 拦截（该 Key 在浏览器里能用、在脚本里被拒时优先怀疑这一点）")
+            elif status == 404:
+                hints.append("端点不存在：Base URL 可能少了或多了 /v1，检查供应商文档给的地址")
+            elif 500 <= status <= 599:
+                hints.append(f"服务端错误 {status}，稍后重试")
             continue
         records = extract_model_records(payload)
         if records:
             return url, records
-        errors.append(f"{url} -> HTTP {status} 但没有解析到模型")
+        errors.append(f"{url} → HTTP {status} 但没有解析到模型列表")
+        hints.append("返回 200 但不是模型列表：该地址返回的是网页/订阅信息而非 API，Base URL 要填 API 端点")
     detail = "\n".join(errors) if errors else "没有可尝试的 URL"
-    raise SyncError("拉模型列表失败。该端点可能没有 GET /models。\n" + detail)
+    hint = f"\n建议：{'；'.join(dict.fromkeys(hints))}" if hints else ""
+    raise SyncError(f"拉模型列表失败（已试过 {len(errors)} 个地址）：\n{detail}{hint}")
 
 
 def _post_json(

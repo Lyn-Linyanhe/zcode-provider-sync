@@ -57,7 +57,7 @@ COL_DROP_W = 96
 COL_DEL_W = 44  # 图标按钮列（插头/铅笔/垃圾桶，32px 画布）
 
 # R4-P1-9 文案包（findings-ux.md 逐条落地；R6-P1-14/15：统一「推理等级」命名）
-NAME_PLACEHOLDER = "输入模型 ID，或点获取模型列表"
+NAME_PLACEHOLDER = "输入模型 ID"
 CTX_PLACEHOLDER = "如 1000000（≈1M tokens）"
 MAX_PLACEHOLDER = "留空 = 默认"
 API_TYPE_HINT = "不确定选哪个？大多数 OpenAI 兼容接口、中转站选第一项 Chat Completions；仅直连官方 Anthropic 接口时选最后一项。"
@@ -375,7 +375,13 @@ class Drop(tk.Frame):
         # 上限 280。候选超过可视数靠滚轮滚，一律不出滚动条，视觉上零大片空白。
         linespace = int(round(float(self.fonts["ui"].metrics("linespace"))))
         item_h = linespace
-        width = max(self.winfo_width(), 280)
+        # 宽度适配最长选项：候选模型 ID 常常比字段宽（如 openrouter/anthropic/...），
+        # 只看字段宽会在 Listbox 里横向裁掉；cap 620 防止撑爆屏幕。
+        option_w = 0
+        for option in self.options:
+            option_w = max(option_w, self.fonts["ui"].measure(str(option)))
+        note_w = 0
+        width = max(self.winfo_width(), 280, min(option_w + 36, 620))
         x = self.winfo_rootx()
         field_top = self.winfo_rooty()
         y_below = field_top + self.winfo_height()
@@ -1662,8 +1668,10 @@ class App(tk.Tk):
                 return rec.get("contextWindow")
         return None
 
-    def _name_col_width(self, extra: str = "") -> int:
-        """P1-3：名字列宽 = 各行模型名最大实测宽 + caret 区，clamp [140, 260]，全行共用。"""
+    def _name_col_width(self, extra: str = "", cap: int = 420) -> int:
+        """P1-3：名字列宽 = 各行模型名最大实测宽 + caret 区，clamp [140, cap]，全行共用。
+        cap 由 _update_name_col 按窗口可用宽度计算（默认 420）；长 ID 超出 cap 时
+        靠悬停 tooltip 显示全名（_attach_name_tooltip）。"""
         text_w = 0
         for row in self.rows:
             value = row["id"].get().strip()
@@ -1672,12 +1680,50 @@ class App(tk.Tk):
         if extra.strip():
             text_w = max(text_w, self.fonts["ui"].measure(extra.strip()))
         chrome = self.fonts["ui"].measure("▾") + 20 + 10 + 8  # caret 字形 + padx 10×2 + 右缘 10 + 余量
-        return max(140, min(260, int(text_w + chrome)))
+        return max(140, min(int(text_w + chrome), cap))
 
     def _update_name_col(self) -> None:
-        width = self._name_col_width()
+        # cap 按可用宽度收紧：右列实测宽 + 徽章余量，避免长 ID 把右列挤出卡片
+        try:
+            self.update_idletasks()
+            right_w = 0
+            for row in self.rows:
+                right = row.get("right")
+                if right is not None:
+                    try:
+                        right_w = max(right_w, right.winfo_reqwidth())
+                    except tk.TclError:
+                        pass
+            canvas_w = self.canvas.winfo_width()
+            cap = max(140, min(420, canvas_w - right_w - 130))
+        except tk.TclError:
+            cap = 420
+        width = self._name_col_width(cap=cap)
         for row in self.rows:
             row["id_box"].configure(width=width)
+            self._attach_name_tooltip(row, width)
+
+    def _attach_name_tooltip(self, row: dict, width: int) -> None:
+        """模型 ID 被列宽裁掉时（常见于超长网关 ID），悬停显示完整名称。"""
+        drop = row.get("drop")
+        value = row["id"].get().strip()
+        if drop is None or not value:
+            return
+        needed = self.fonts["ui"].measure(value) + 34  # caret + 内距
+        if needed <= width:
+            return
+        if not getattr(drop, "_name_tooltip_bound", False):
+            drop.label.bind(
+                "<Enter>",
+                lambda _e, r=row, d=drop: self._show_name_tooltip(d, r),
+                add="+",
+            )
+            drop._name_tooltip_bound = True
+
+    def _show_name_tooltip(self, drop, row: dict) -> None:
+        value = row["id"].get().strip()
+        if value and self.fonts["ui"].measure(value) + 34 > row["id_box"].winfo_width():
+            Tooltip(drop.label, value, self.fonts)
 
     def add_row(self, rec: dict) -> None:
         frame = tk.Frame(self.rows_frame, bg=ROW, highlightbackground=LINE, highlightthickness=1)
@@ -1710,6 +1756,7 @@ class App(tk.Tk):
         # 右侧各列先建：_field_h 由 _mini_field 实测得出，左侧名字列定宽需要它。
         right = tk.Frame(inner, bg=ROW)
         right.pack(side="right")
+        row["right"] = right
         ctx_box = self._mini_field(right, ctx_var)
         ctx_box.pack(side="left", fill="y", padx=(0, 8))
         max_box = self._mini_field(right, max_var)
