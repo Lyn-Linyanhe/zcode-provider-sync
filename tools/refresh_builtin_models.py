@@ -92,7 +92,7 @@ def build_rules(data):
             specs["maxOutputTokens"] = {"max": maximum}
         base = model_id[len(vendor):]
         # batch/free 等变体单独保存，不与原型号取 max() 混出不存在的配额。
-        rules.append({"modelMatch": r"(?:[^/]+/)*" + re.escape(base),
+        rules.append({"modelMatch": re.escape(model_id),
                       "vendor": vendor.rstrip("/"), "display": base,
                       "sourceId": model_id, "sources": [URL],
                       "config": {"properties": properties, "optionSpecs": specs}})

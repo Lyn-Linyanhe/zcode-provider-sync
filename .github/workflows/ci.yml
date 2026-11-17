@@ -6,7 +6,10 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -15,7 +18,11 @@ jobs:
       - name: 语法与静态检查
         run: |
           python -m py_compile app.py sync.py tools/refresh_builtin_models.py
+      - name: Windows 界面与数据回归
+        if: runner.os == 'Windows'
+        run: python -m unittest discover -s tests -v
       - name: 数据文件有效性与加载自检
+        shell: bash
         run: |
           python - <<'PY'
           import json

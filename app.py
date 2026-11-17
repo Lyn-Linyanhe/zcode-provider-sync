@@ -91,37 +91,64 @@ _builtin_rules_cache: list[tuple[re.Pattern, dict]] | None = None
 
 
 def _load_builtin_rules() -> list[tuple[re.Pattern, dict]]:
-    """市面模型基础配置库：ZCode 内置规则（优先用安装目录的活文件，缺失用快照）
-    + 项目补充规则（OpenRouter 实测参数）。按特异性排序——字面字符多者优先，
-    兜底 catch-all（".*"）自然垫底且由调用方跳过。"""
+    """精确目录条目按 sourceId 匹配；ZCode 家族规则按声明顺序覆盖。
+    裸型号仅在来源唯一时提供回退，不跨厂商混用同名型号的参数。
+    """
     global _builtin_rules_cache
     if _builtin_rules_cache is not None:
         return _builtin_rules_cache
-    db: dict = {}
     try:
         db = json.loads(BUILTIN_DB_PATH.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
+    except (OSError, ValueError):
         db = {}
-    zrules = None
+    if not isinstance(db, dict):
+        db = {}
     try:
         zrules = json.loads(ZCODE_BUILTIN_PATH.read_text(encoding="utf-8"))["config"][
             "modelConfigRules"
         ]["modelRules"]
-    except Exception:  # noqa: BLE001
+    except (OSError, ValueError, KeyError, TypeError):
         zrules = db.get("zcodeSnapshot") or []
-    merged = []
+    if not isinstance(zrules, list):
+        zrules = []
     supplemental = db.get("supplemental") or []
-    # 精确模型条目优先于 ZCode 家族规则；同源的覆盖规则从后到前逐字段取值。
-    for rule in [*sorted(supplemental, key=lambda r: len(r.get("display", "")), reverse=True), *reversed(zrules)]:
+    if not isinstance(supplemental, list):
+        supplemental = []
+
+    exact = []
+    families = []
+    sources_by_name: dict[str, set[str]] = {}
+    for rule in supplemental:
+        if not isinstance(rule, dict):
+            continue
+        source_id = rule.get("sourceId")
+        # 兼容旧快照：vendor + display 是完整型号，不为它添加隐式变体后缀。
+        if not source_id and rule.get("vendor") and rule.get("display"):
+            source_id = f"{rule['vendor']}/{rule['display']}"
+        if isinstance(source_id, str) and "/" in source_id:
+            _, _, bare = source_id.partition("/")
+            if bare:
+                exact.append((source_id, bare, rule))
+                sources_by_name.setdefault(bare, set()).add(source_id)
+        else:
+            families.append(rule)
+
+    merged = []
+    for source_id, bare, rule in sorted(exact, key=lambda item: len(item[0]), reverse=True):
+        pattern = r"(?:[^/]+/)*" + re.escape(source_id)
+        if len(sources_by_name[bare]) == 1:
+            pattern = f"(?:{pattern}|{re.escape(bare)})"
+        cfg = rule.get("config")
+        if isinstance(cfg, dict):
+            merged.append((re.compile(pattern), cfg))
+    for rule in [*families, *reversed(zrules)]:
+        if not isinstance(rule, dict) or not isinstance(rule.get("config"), dict):
+            continue
         try:
-            pattern = rule["modelMatch"]
-            if rule.get("display"):
-                base = str(rule["display"])
-                pattern = r"(?:[^/]+/)*" + re.escape(base) + r"(?::(?:free|batch|online|thinking|extended))?(?:\[1m\])?"
-            compiled = re.compile(pattern)
+            compiled = re.compile(rule["modelMatch"])
         except (KeyError, TypeError, re.error):
             continue
-        merged.append((compiled, rule.get("config") or {}))
+        merged.append((compiled, rule["config"]))
     _builtin_rules_cache = merged
     return merged
 
@@ -149,8 +176,8 @@ def _builtin_model_info(model_id: str) -> dict:
                 info[key] = value
         if "reasoningValues" not in info and isinstance(level.get("values"), list) and level["values"]:
             info["reasoningValues"] = list(level["values"])
-            if level.get("map") is not None:
-                info["reasoningMap"] = level["map"]
+        if "reasoningMap" not in info and isinstance(level.get("map"), str) and level["map"].strip():
+            info["reasoningMap"] = level["map"]
         for key, value in (props.get("inputFormat") or {}).items():
             if isinstance(value, bool):
                 info.setdefault(key, value)
@@ -158,10 +185,9 @@ def _builtin_model_info(model_id: str) -> dict:
 
 
 API_TYPE_OPTIONS = (
-    ("chat", "Chat Completions (/v1/chat/completions)"),
-    ("responses", "Responses (/responses)"),
-    # P2-22：与 sync 实际拼接的 URL 一致（anthropic 基址 + /v1/messages）
-    ("anthropic", "Anthropic Messages (/v1/messages)"),
+    ("chat", "Chat Completions"),
+    ("responses", "Responses"),
+    ("anthropic", "Anthropic Messages"),
 )
 # 档位中文都从 sync.REASONING_LABELS 来。勾选集合不是连续区间。
 REASON_UNSET = "未设置"
@@ -1153,6 +1179,8 @@ class App(tk.Tk):
         self._clean_form = None
         self._loaded_revision = None
         self._layout_after = None
+        self._page_layout_after = None
+        self._page_compact = None
         self._rail_rows: dict[str, dict] = {}
         self._rail_sig: tuple = ()
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
@@ -1265,19 +1293,22 @@ class App(tk.Tk):
         self.rowconfigure(2, weight=1)
 
         header = tk.Frame(self, bg=BG)
+        self.header_frame = header
         header.grid(row=0, column=0, rowspan=2, sticky="ew", padx=36, pady=(22, 0))
         header.columnconfigure(0, weight=1)
-        tk.Label(header, text="模型设置", bg=BG, fg=WHITE, font=self.fonts["h1"]).grid(
-            row=0, column=0, sticky="w", pady=(2, 4)
-        )
-        tk.Label(
+        self.header_title = tk.Label(header, text="模型设置", bg=BG, fg=WHITE, font=self.fonts["h1"])
+        self.header_title.grid(row=0, column=0, sticky="w", pady=(2, 4))
+        self.header_subtitle = tk.Label(
             header,
             text="管理自定义模型供应商，配置后可在聊天时选择使用。",
             bg=BG,
             fg=MUTED,
             font=self.fonts["ui"],
-        ).grid(row=1, column=0, sticky="w", pady=(36, 16))  # R6-3：标题-副标题间距对齐官方（≈59px）
+            anchor="w",
+        )
+        self.header_subtitle.grid(row=1, column=0, sticky="w", pady=(36, 16))
         actions = tk.Frame(header, bg=BG)
+        self.header_actions = actions
         actions.grid(row=1, column=1, sticky="e")
         reload_btn = self._ghost_btn(actions, "↻", self.reload_click, pad=8)
         reload_btn.pack(side="left", padx=(0, 8))
@@ -1291,6 +1322,7 @@ class App(tk.Tk):
         self.card_ref = card  # P0-1：弹层底缘上翻以卡片为界
 
         rail = tk.Frame(card, bg=SIDE, width=320)
+        self.rail_frame = rail
         rail.grid(row=0, column=0, sticky="nsew")
         rail.grid_propagate(False)
         # R6-6：rail 内部列撑满 320px，行 fill="x" 后行宽 = 320-16（rail_box padx）= 304px
@@ -1315,6 +1347,7 @@ class App(tk.Tk):
         tk.Frame(card, bg=LINE, width=1).grid(row=0, column=1, sticky="ns")
 
         right = tk.Frame(card, bg=CARD)
+        self.settings_frame = right
         right.grid(row=0, column=2, sticky="nsew")
         right.columnconfigure(0, weight=1)
         right.rowconfigure(3, weight=1, minsize=280)
@@ -1335,6 +1368,7 @@ class App(tk.Tk):
         ).pack(side="left", fill="x", expand=True, padx=(8, 0))
 
         form = tk.Frame(right, bg=CARD)
+        self.form_frame = form
         form.grid(row=1, column=0, sticky="ew", padx=32)
         form.columnconfigure(0, weight=1)
         self.base_url = tk.StringVar()
@@ -1342,9 +1376,9 @@ class App(tk.Tk):
         self.api_type = tk.StringVar(value="chat")
         self.api_type_ui = tk.StringVar(value=api_type_label("chat"))
         self.provider_id = tk.StringVar()
-        self._label(form, "Base URL", 0)
-        self._entry(form, self.base_url, 1, mono=True)
-        self._label(form, "API 格式", 2)
+        self.url_label = self._label(form, "Base URL", 0)
+        self.url_entry = self._entry(form, self.base_url, 1, mono=True)
+        self.api_format_label = self._label(form, "API 格式", 2)
         self.type_drop = Drop(
             form,
             self.api_type_ui,
@@ -1353,6 +1387,11 @@ class App(tk.Tk):
             command=self.on_type_change,
         )
         self.type_drop.grid(row=3, column=0, sticky="ew")
+        Tooltip(
+            self.type_drop.label,
+            "Chat Completions：/v1/chat/completions\nResponses：/v1/responses\nAnthropic Messages：/v1/messages\n实际路径取决于服务商的 Base URL。",
+            self.fonts,
+        )
         # R4-P1-9 [U-3]：API 格式下拉正下方常驻指引一行（MUTED 小字）。
         self.api_hint = tk.Label(
             form,
@@ -1365,7 +1404,7 @@ class App(tk.Tk):
         )
         self.api_hint.grid(row=4, column=0, sticky="ew", pady=(4, 0))
         form.bind("<Configure>", lambda e: self.api_hint.configure(wraplength=max(100, e.width - 8)))
-        self._label(form, "API Key", 5)
+        self.api_key_label = self._label(form, "API Key", 5)
         self._key_field(form, 6)
         # R4-P0-1：API Key 行右侧的「测试连接」按钮移除——测试改为每行模型级的「测试」列，
         # 用该行模型 ID 发一次最小真实请求（见 add_row / on_test_row）。
@@ -1454,6 +1493,49 @@ class App(tk.Tk):
         self.dirty_label.grid(row=1, column=0, sticky="w")
         self._white_btn(footer, "保存当前供应商", self.on_save).grid(row=0, column=1, padx=(16, 0))
         self.bind_all("<MouseWheel>", self.on_wheel, add="+")
+        self.bind("<Configure>", self._on_window_configure, add="+")
+        self.after_idle(self._layout_page)
+
+    def _on_window_configure(self, event) -> None:
+        if event.widget is self and self._page_layout_after is None:
+            self._page_layout_after = self.after_idle(self._layout_page)
+
+    def _layout_page(self) -> None:
+        self._page_layout_after = None
+        compact = self.winfo_height() < 940
+        if compact == self._page_compact:
+            return
+        self._page_compact = compact
+        self.header_frame.grid_configure(pady=(12 if compact else 22, 0))
+        self.header_subtitle.grid_configure(pady=(6, 10) if compact else (36, 16))
+        self.header_actions.grid_configure(row=0 if compact else 1, rowspan=2 if compact else 1)
+        self.rail_frame.configure(width=250 if compact else 320)
+        self.settings_frame.rowconfigure(3, minsize=200 if compact else 280)
+        form = self.form_frame
+        if compact:
+            form.columnconfigure(0, weight=3, uniform="provider-form")
+            form.columnconfigure(1, weight=2, uniform="provider-form")
+            self.url_label.grid_configure(row=0, column=0, columnspan=1)
+            self.url_entry.master.grid_configure(row=1, column=0, columnspan=1, padx=(0, 10))
+            self.api_format_label.grid_configure(row=0, column=1, columnspan=1)
+            self.type_drop.grid_configure(row=1, column=1, columnspan=1)
+            self.api_hint.configure(text="按服务商文档选择协议，中转服务也可能支持 Messages。")
+            self.api_hint.grid_configure(row=2, column=0, columnspan=2)
+            self.api_key_label.grid_configure(row=3, column=0, columnspan=2)
+            self.key_box.grid_configure(row=4, column=0, columnspan=2)
+        else:
+            form.columnconfigure(0, weight=1, uniform="")
+            form.columnconfigure(1, weight=0, uniform="")
+            self.url_label.grid_configure(row=0, column=0, columnspan=1)
+            self.url_entry.master.grid_configure(row=1, column=0, columnspan=1, padx=0)
+            self.api_format_label.grid_configure(row=2, column=0, columnspan=1)
+            self.type_drop.grid_configure(row=3, column=0, columnspan=1)
+            self.api_hint.configure(text=API_TYPE_HINT)
+            self.api_hint.grid_configure(row=4, column=0, columnspan=1)
+            self.api_key_label.grid_configure(row=5, column=0, columnspan=1)
+            self.key_box.grid_configure(row=6, column=0, columnspan=1)
+        if self._layout_after is None:
+            self._layout_after = self.after_idle(self._layout_model_rows)
 
     def _drop_head(self, text: str, tip: str) -> None:
         head = tk.Frame(self.columns, bg=CARD, width=self.col_drop_w, height=22)
@@ -1494,11 +1576,12 @@ class App(tk.Tk):
         box.numentry = entry  # R4-P1-6：红框校验/占位符需要 entry 引用
         return box
 
-    def _label(self, parent: tk.Frame, text: str, row: int) -> None:
-        # P2-23/R6-11：表单标签升为 ui 字号（官方 14px），MUTED 色不变
-        tk.Label(
+    def _label(self, parent: tk.Frame, text: str, row: int) -> tk.Label:
+        label = tk.Label(
             parent, text=text, bg=CARD, fg=MUTED, font=self.fonts["ui"], anchor="w"
-        ).grid(row=row, column=0, sticky="w", pady=(6, 3))
+        )
+        label.grid(row=row, column=0, sticky="w", pady=(6, 3))
+        return label
 
     def _entry(self, parent: tk.Frame, var: tk.StringVar, row: int, mono: bool = False) -> tk.Entry:
         # P1-3：与 _key_field 同款「外框+内 entry」结构，文字左边距统一为 10px，不贴边框。
@@ -1520,6 +1603,7 @@ class App(tk.Tk):
 
     def _key_field(self, parent: tk.Frame, row: int) -> None:
         box = tk.Frame(parent, bg=INPUT, highlightbackground=LINE2, highlightthickness=1)
+        self.key_box = box
         box.grid(row=row, column=0, sticky="ew")
         box.columnconfigure(0, weight=1)
         self.key_entry = tk.Entry(
@@ -2477,11 +2561,13 @@ class App(tk.Tk):
         inner.pack(fill="both", expand=True, padx=1, pady=1)
         tk.Label(
             inner,
-            text="勾选这个模型支持的档即可，不必连续；只保存勾上的。",
+            text="只勾选模型支持的档位，不必连续。",
             bg=POPUP_BG,
             fg=MUTED,
             font=self.fonts["small"],
             anchor="w",
+            justify="left",
+            wraplength=252,
         ).pack(fill="x", padx=10, pady=(8, 4))
         vars_by_level: dict[str, tk.BooleanVar] = {}
         selected = {str(item) for item in row.get("checked") or []}

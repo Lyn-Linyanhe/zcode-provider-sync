@@ -120,6 +120,18 @@ class UITests(unittest.TestCase):
         self.assertIn('ultra', row['checked'])
         self.assertEqual('ultra', self.root._ordered_checks(row)[-1])
 
+    def test_minimum_window_keeps_model_list_usable(self):
+        self.root.geometry('1280x820')
+        self.root.update()
+        self.assertGreaterEqual(self.root.canvas.winfo_height(), 200)
+        row = self.root.rows[0]
+        list_bottom = self.root.canvas.winfo_rooty() + self.root.canvas.winfo_height()
+        self.assertLessEqual(row['frame'].winfo_rooty() + row['frame'].winfo_height(), list_bottom)
+        self.assertGreaterEqual(row['right'].winfo_rootx(), self.root.canvas.winfo_rootx())
+        self.root.geometry('1680x1040')
+        self.root.update()
+        self.assertFalse(self.root._page_compact)
+
     def test_tooltip_single_instance_and_short_layout(self):
         self.root.catalog_ids = ['accounts/fireworks/models/' + 'very-long-model-' * 5]
         self.root.refresh_row_catalog()

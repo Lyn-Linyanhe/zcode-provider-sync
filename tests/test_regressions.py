@@ -80,6 +80,18 @@ class PersistenceTests(unittest.TestCase):
         self.assertFalse(rules[0]["config"]["enabled"])
         self.assertEqual("{}", rules[0]["config"]["optionSpecs"]["reasoningLevel"]["map"])
 
+    def test_duplicate_provider_identity_rejected_without_writing(self):
+        other = copy.deepcopy(self.data["config"]["providerConfigRules"]["providerRules"][0])
+        other["providerName"] = "Duplicate identity"
+        other["config"]["personalModelIds"] = ["b"]
+        self.data["config"]["providerConfigRules"]["providerRules"].append(other)
+        self.path.write_text(json.dumps(self.data), encoding="utf-8")
+        before = self.path.read_bytes()
+        with self.assertRaises(sync.SyncError):
+            self.save(expected_revision=sync.config_revision(self.data))
+        self.assertEqual(before, self.path.read_bytes())
+        self.assertEqual([], list(self.path.parent.glob("*.bak-*")))
+
     def test_duplicate_and_long_ids_rejected(self):
         for models in ([{"id": "a"}, {"id": "a"}], [{"id": "x" * 201}]):
             with self.assertRaises(sync.SyncError):
@@ -97,6 +109,33 @@ class NetworkTests(unittest.TestCase):
         self.assertTrue(url.endswith("/v1/models"))
         self.assertEqual("ok", records[0]["id"])
 
+    def test_post_error_body_is_bounded_and_closed(self):
+        import io
+        import urllib.error
+
+        class TrackedBody(io.BytesIO):
+            def __init__(self):
+                super().__init__(b"x" * 4096)
+                self.read_sizes = []
+
+            def read(self, size=-1):
+                self.read_sizes.append(size)
+                return super().read(size)
+
+        body = TrackedBody()
+        error = urllib.error.HTTPError("https://example.invalid/chat/completions", 500, "error", {}, body)
+        with patch.object(sync, "_open_request", side_effect=error):
+            code, _ = sync._post_json("https://example.invalid/chat/completions", {}, {})
+        self.assertEqual(500, code)
+        self.assertEqual([400], body.read_sizes)
+        self.assertTrue(body.closed)
+
+    def test_model_test_reports_refused_redirect(self):
+        with patch.object(sync, "_open_request", side_effect=sync.SyncError("已拒绝跨源重定向")):
+            result = sync.test_connection("https://example.invalid/v1", "test-only", "chat", "a")
+        self.assertFalse(result["ok"])
+        self.assertIn("重定向", result["reason"])
+
     def test_redirect_rejects_cross_origin_and_downgrade(self):
         import urllib.request
         handler = sync.SafeRedirectHandler()
@@ -109,6 +148,42 @@ class NetworkTests(unittest.TestCase):
 
 
 class CatalogTests(unittest.TestCase):
+    def lookup_fixture(self, database, model_id):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "models.json"
+            path.write_text(json.dumps(database), encoding="utf-8")
+            with patch.object(app, "BUILTIN_DB_PATH", path), \
+                 patch.object(app, "ZCODE_BUILTIN_PATH", Path(tmp) / "missing.json"), \
+                 patch.object(app, "_builtin_rules_cache", None):
+                return app._builtin_model_info(model_id)
+
+    def test_qualified_models_do_not_cross_vendor_boundaries(self):
+        db = {"zcodeSnapshot": [], "supplemental": [
+            {"sourceId": "openai/shared:batch", "vendor": "openai", "display": "shared:batch",
+             "modelMatch": r"(?:[^/]+/)*shared:batch", "config": {"properties": {"contextWindow": 100000}}},
+            {"sourceId": "google/shared:batch", "vendor": "google", "display": "shared:batch",
+             "modelMatch": r"(?:[^/]+/)*shared:batch", "config": {"properties": {"contextWindow": 200000}}}
+        ]}
+        self.assertEqual(200000, self.lookup_fixture(db, "google/shared:batch")["contextWindow"])
+        self.assertEqual(200000, self.lookup_fixture(db, "openrouter/google/shared:batch")["contextWindow"])
+        self.assertEqual({}, self.lookup_fixture(db, "shared:batch"))
+
+    def test_display_does_not_expand_normal_model_into_variant(self):
+        db = {"zcodeSnapshot": [{"modelMatch": r"openai/shared:batch",
+              "config": {"properties": {"contextWindow": 200000}}}],
+              "supplemental": [{"sourceId": "openai/shared", "vendor": "openai", "display": "shared",
+                  "modelMatch": r"openai/shared", "config": {"properties": {"contextWindow": 100000}}}]}
+        self.assertEqual(200000, self.lookup_fixture(db, "openai/shared:batch")["contextWindow"])
+
+    def test_reasoning_mapping_merges_independently_from_levels(self):
+        import re
+        rules = [(re.compile("a"), {"optionSpecs": {"reasoningLevel": {"map": "new-map"}}}),
+                 (re.compile("a"), {"optionSpecs": {"reasoningLevel": {"values": ["low", "high"], "map": "old-map"}}})]
+        with patch.object(app, "_load_builtin_rules", return_value=rules):
+            found = app._builtin_model_info("a")
+        self.assertEqual(["low", "high"], found["reasoningValues"])
+        self.assertEqual("new-map", found["reasoningMap"])
+
     def test_partial_rule_does_not_mask_base_fields(self):
         import re
         rules = [(re.compile(r"qwen3-max-2026"), {"properties": {"inputFormat": {"supportsImage": True}}}),

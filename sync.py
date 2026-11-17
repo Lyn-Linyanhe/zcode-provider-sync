@@ -684,8 +684,11 @@ def _post_json(
             body = resp.read(65536).decode("utf-8", "replace")
             return getattr(resp, "status", 200), body
     except urllib.error.HTTPError as exc:
-        body = exc.read()[:400].decode("utf-8", "replace") if exc.fp else ""
-        return exc.code, body
+        try:
+            body = exc.read(400).decode("utf-8", "replace") if exc.fp else ""
+            return exc.code, body
+        finally:
+            exc.close()
     # P0-4：URLError/超时等网络异常不再包成 SyncError，原样上抛，
     # 由 test_connection 统一归类为中文原因（结构化返回）。
 
@@ -810,6 +813,8 @@ def test_connection(
         last_endpoint = url
         try:
             status, body = _post_json(url, headers, payload, timeout=TEST_TIMEOUT_SEC)
+        except SyncError as exc:
+            return result(False, endpoint=url, reason=str(exc))
         except (socket.timeout, TimeoutError):
             network = "连接超时"
             continue
@@ -1006,6 +1011,8 @@ def _save_provider(
     created = False
     if provider_id:
         hits = find_providers(rules, provider_id=provider_id)
+        if len(hits) > 1:
+            raise SyncError("配置含重复供应商 ID，未保存。请先在 ZCode 中整理后重新读取")
         if hits:
             provider = hits[0]
         else:
