@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import copy
+import hashlib
 import json
+from contextlib import contextmanager
 import os
 import re
 import shutil
@@ -21,11 +24,11 @@ from typing import Any
 
 DEFAULT_CONFIG = Path.home() / ".zcode" / "v2" / "provider_config.json"
 DEFAULT_CONTEXT_WINDOW = 128000
-REQUEST_TIMEOUT_SEC = 30
-# 中转站的网络类失败是瞬时的（实测同一 URL 交替 403/超时/200）：退避重试。
-# HTTP 状态码不重试——那是服务端明确回答。
-FETCH_RETRY_ATTEMPTS = 3
-FETCH_RETRY_BACKOFF_SEC = 1.5
+REQUEST_TIMEOUT_SEC = 8
+FETCH_TOTAL_TIMEOUT_SEC = 35
+# 每轮先尝试全部候选地址，再对暂时性错误重试；限制累计等待。
+FETCH_RETRY_ATTEMPTS = 2
+FETCH_RETRY_BACKOFF_SEC = 0.5
 
 API_TYPES = {
     "chat": "openai-chat-completions",
@@ -68,6 +71,73 @@ MODEL_ID_CTRL_RE = re.compile(r"[\r\n\t\x00-\x1f\x7f]+")
 
 class SyncError(Exception):
     pass
+
+
+def config_revision(data: dict) -> str:
+    raw = json.dumps(data, sort_keys=True, ensure_ascii=False, allow_nan=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def validate_model_id(value: str) -> str:
+    text = str(value).strip()
+    if MODEL_ID_CTRL_RE.search(str(value)):
+        raise SyncError("模型 ID 不能包含换行或控制字符")
+    if len(text) > 200:
+        raise SyncError(f"模型 ID 最多 200 个字符，当前为 {len(text)} 个；请核对完整 ID")
+    return text
+
+
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        old, new = urllib.parse.urlsplit(req.full_url), urllib.parse.urlsplit(newurl)
+        def origin(parts):
+            return parts.scheme, parts.hostname, parts.port or (443 if parts.scheme == "https" else 80)
+        if origin(old) != origin(new):
+            raise SyncError("已拒绝跨源或协议降级重定向，避免向其他地址发送 API Key")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def safe_url(url: str) -> str:
+    parts = urllib.parse.urlsplit(url)
+    host = parts.hostname or ""
+    if parts.port:
+        host += f":{parts.port}"
+    return urllib.parse.urlunsplit((parts.scheme, host, parts.path, "", ""))
+
+
+def _open_request(req, timeout):
+    opener = urllib.request.build_opener(
+        SafeRedirectHandler(), urllib.request.HTTPSHandler(context=ssl.create_default_context())
+    )
+    return opener.open(req, timeout=timeout)
+
+
+@contextmanager
+def _config_lock(path: Path):
+    # 同一工具的并发保存使用 OS 文件锁；ZCode 不使用此锁，另做磁盘版本检查。
+    lock_path = path.with_name(path.name + ".sync-lock")
+    with lock_path.open("a+b") as handle:
+        if handle.tell() == 0:
+            handle.write(b"0")
+            handle.flush()
+        handle.seek(0)
+        try:
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            raise SyncError("另一个窗口正在保存，请稍后重试") from exc
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            if os.name == "nt":
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle, fcntl.LOCK_UN)
 
 
 def mask_key(key: str) -> str:
@@ -267,8 +337,8 @@ def load_config(path: Path) -> dict[str, Any]:
         raise SyncError(f"找不到配置文件: {path}")
     try:
         # R4-P1-7/C-14：utf-8-sig 兼容记事本写出的 BOM；IO/编码异常包成中文 SyncError。
-        data = json.loads(path.read_text(encoding="utf-8-sig"))
-    except json.JSONDecodeError as exc:
+        data = json.loads(path.read_text(encoding="utf-8-sig"), parse_constant=lambda v: (_ for _ in ()).throw(ValueError("非法 JSON 数值")))
+    except ValueError as exc:
         raise SyncError(_read_err(f"不是合法 JSON（{exc}）")) from exc
     except (OSError, UnicodeDecodeError) as exc:
         raise SyncError(_read_err(f"文件无法读取（{exc}）")) from exc
@@ -474,42 +544,29 @@ def build_headers(api_type: str, api_key: str) -> dict[str, str]:
     return headers
 
 
-def http_get_json(url: str, headers: dict[str, str]) -> tuple[int, Any, str]:
-    """GET 一个 JSON 端点。返回 (状态码, 解析后的 payload 或 None, 摘录文本)。
-
-    网络类失败（超时 / SSL 握手抖动 / 连接被拒）在真实中转站上是**瞬时**的——
-    实测同一 URL 交替出现 403 / 超时 / 200。这里对网络类错误做退避重试（3 次），
-    HTTP 状态码（401/403/404…）不重试：那是服务端明确回答，重试无意义。
-    """
+def http_get_json(url: str, headers: dict[str, str], *, timeout: float = REQUEST_TIMEOUT_SEC) -> tuple[int, Any, str]:
+    """单次 GET；重试与备用地址统一由 fetch_models 调度。"""
     req = urllib.request.Request(url, headers=headers, method="GET")
-    context = ssl.create_default_context()
-    last_error: BaseException | None = None
-    for attempt in range(FETCH_RETRY_ATTEMPTS):
-        try:
-            with urllib.request.urlopen(
-                req, timeout=REQUEST_TIMEOUT_SEC, context=context
-            ) as resp:
-                raw = resp.read()
-                status = getattr(resp, "status", 200)
-            text = raw.decode("utf-8", "replace")
-            try:
-                return status, json.loads(text), text[:300]
-            except json.JSONDecodeError:
-                return status, None, text[:300]
-        except urllib.error.HTTPError as exc:
-            raw = exc.read() if exc.fp else b""
-            snippet = raw[:300].decode("utf-8", "replace")
-            return exc.code, None, snippet
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            last_error = exc
-            if attempt + 1 < FETCH_RETRY_ATTEMPTS:
-                time.sleep(FETCH_RETRY_BACKOFF_SEC * (attempt + 1))
-                continue
-    reason = getattr(last_error, "reason", last_error)
-    raise SyncError(
-        f"连接不上 {url}（已重试 {FETCH_RETRY_ATTEMPTS} 次）：{reason}\n"
-        "多为网络抖动/代理未开，稍后重试或先在工具里点「测试连接」确认该端点可达。"
-    ) from last_error
+    try:
+        with _open_request(req, timeout) as resp:
+            raw = resp.read(8 * 1024 * 1024 + 1)
+            status = getattr(resp, "status", 200)
+        if len(raw) > 8 * 1024 * 1024:
+            raise SyncError("模型列表响应超过 8 MiB")
+    except urllib.error.HTTPError as exc:
+        exc.close()
+        return exc.code, None, ""  # 不显示服务器回显，防止错误正文包含凭据
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        reason = getattr(exc, "reason", exc)
+        if isinstance(reason, ssl.SSLCertVerificationError):
+            raise SyncError("TLS 证书验证失败（未重试，请检查证书链）") from exc
+        if isinstance(reason, (TimeoutError, socket.timeout)):
+            raise SyncError("连接或读取超时") from exc
+        raise SyncError("网络连接失败（DNS、连接或 TLS 握手异常）") from exc
+    try:
+        return status, json.loads(raw.decode("utf-8")), ""
+    except (ValueError, UnicodeDecodeError):
+        return status, None, "响应不是合法 JSON"
 
 
 def extract_model_records(payload: Any) -> list[dict[str, Any]]:
@@ -566,28 +623,46 @@ def extract_model_records(payload: Any) -> list[dict[str, Any]]:
 
 
 def fetch_models(base_url: str, api_key: str, api_type: str) -> tuple[str, list[dict[str, Any]]]:
-    headers = build_headers(api_type, api_key)
-    errors: list[str] = []
-    hints: list[str] = []
-    for url in candidate_model_urls(base_url):
-        status, payload, snippet = http_get_json(url, headers)
-        if status != 200 or payload is None:
-            errors.append(f"{url} → HTTP {status} {snippet.strip()[:160]!r}")
-            if status in (401, 403):
-                hints.append("Key 无效、未授权，或被 Cloudflare 拦截（该 Key 在浏览器里能用、在脚本里被拒时优先怀疑这一点）")
-            elif status == 404:
-                hints.append("端点不存在：Base URL 可能少了或多了 /v1，检查供应商文档给的地址")
-            elif 500 <= status <= 599:
-                hints.append(f"服务端错误 {status}，稍后重试")
-            continue
-        records = extract_model_records(payload)
-        if records:
-            return url, records
-        errors.append(f"{url} → HTTP {status} 但没有解析到模型列表")
-        hints.append("返回 200 但不是模型列表：该地址返回的是网页/订阅信息而非 API，Base URL 要填 API 端点")
-    detail = "\n".join(errors) if errors else "没有可尝试的 URL"
-    hint = f"\n建议：{'；'.join(dict.fromkeys(hints))}" if hints else ""
-    raise SyncError(f"拉模型列表失败（已试过 {len(errors)} 个地址）：\n{detail}{hint}")
+    headers = build_headers(API_TYPES.get(api_type, api_type), api_key)
+    urls = candidate_model_urls(base_url)
+    pending = list(urls)
+    errors: dict[str, str] = {}
+    deadline = time.monotonic() + FETCH_TOTAL_TIMEOUT_SEC
+    for attempt in range(FETCH_RETRY_ATTEMPTS):
+        retry = []
+        for url in pending:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                errors[url] = "本次获取已达到等待预算"
+                continue
+            try:
+                status, payload, _ = http_get_json(url, headers, timeout=min(REQUEST_TIMEOUT_SEC, remaining))
+            except SyncError as exc:
+                errors[url] = str(exc)
+                if not any(word in str(exc) for word in ("证书", "重定向", "MiB")):
+                    retry.append(url)
+                continue
+            if status == 200 and payload is not None:
+                records = extract_model_records(payload)
+                if records:
+                    return url, records
+            reason = {
+                200: "响应不是有效的模型列表", 401: "Key 未授权，请检查 API Key",
+                403: "服务端拒绝访问，请检查权限或联系供应商",
+                404: "端点不存在，请核对 Base URL", 429: "请求频率受限",
+            }.get(status, "服务端错误" if status >= 500 else "请求未成功")
+            errors[url] = f"HTTP {status}：{reason}"
+            if status == 429 or status >= 500:
+                retry.append(url)
+        pending = retry
+        if not pending:
+            break
+        if attempt + 1 < FETCH_RETRY_ATTEMPTS:
+            remaining = deadline - time.monotonic()
+            if remaining > 0:
+                time.sleep(min(FETCH_RETRY_BACKOFF_SEC, remaining))
+    details = "\n".join(f"{safe_url(url)} → {reason}" for url, reason in errors.items())
+    raise SyncError("获取模型列表失败：\n" + (details or "没有可尝试的地址"))
 
 
 def _post_json(
@@ -604,7 +679,7 @@ def _post_json(
     req = urllib.request.Request(url, data=raw, headers=req_headers, method="POST")
     context = ssl.create_default_context()
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
+        with _open_request(req, timeout) as resp:
             # R4-P0-1：200 时需解析应答结构，读足量字节（错误分支只需前 400 字符做摘录）。
             body = resp.read(65536).decode("utf-8", "replace")
             return getattr(resp, "status", 200), body
@@ -670,7 +745,7 @@ def test_connection(
         return {
             "ok": ok,
             "code": code,
-            "endpoint": endpoint,
+            "endpoint": safe_url(endpoint) if endpoint else "",
             "elapsed": round(time.monotonic() - started, 2),
             "reason": reason,
         }
@@ -774,7 +849,7 @@ def backup_config(path: Path) -> Path:
 
 
 def atomic_write_json(path: Path, data: dict[str, Any]) -> None:
-    text = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
+    text = json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     fd, tmp_name = tempfile.mkstemp(
         prefix=path.name + ".", suffix=".tmp", dir=str(path.parent)
     )
@@ -793,13 +868,15 @@ def atomic_write_json(path: Path, data: dict[str, Any]) -> None:
 
 def _upsert_model_rule(rules: list[dict[str, Any]], provider_id: str, rec: dict[str, Any]) -> None:
     model_id = rec["id"]
-    context = rec.get("contextWindow") or DEFAULT_CONTEXT_WINDOW
-    try:
-        context = int(context)
-    except (TypeError, ValueError):
-        context = DEFAULT_CONTEXT_WINDOW
-    if context <= 0:
-        context = DEFAULT_CONTEXT_WINDOW
+    context_raw = rec.get("contextWindow")
+    context = context_raw
+    if context not in (None, ""):
+        try:
+            context = int(context)
+        except (TypeError, ValueError) as exc:
+            raise SyncError("上下文窗口必须是正整数") from exc
+        if context <= 0:
+            raise SyncError("上下文窗口必须是正整数")
 
     if rec.get("reasoningChanged"):
         if "reasoningValues" in rec:
@@ -822,7 +899,11 @@ def _upsert_model_rule(rules: list[dict[str, Any]], provider_id: str, rec: dict[
 
     cfg = found.setdefault("config", {})
     props = cfg.setdefault("properties", {})
-    props["contextWindow"] = context
+    # 未填写/未改动的上下文不创建显式覆盖，避免把 ZCode 内置的 1M 等继承值降成 128K。
+    if context not in (None, ""):
+        props["contextWindow"] = int(context)
+    elif rec.get("contextChanged") and "contextWindow" in props:
+        props.pop("contextWindow", None)
     if rec.get("supportsImage"):
         props.setdefault("inputFormat", {})["supportsImage"] = True
     specs = cfg.setdefault("optionSpecs", {})
@@ -878,7 +959,7 @@ def _upsert_model_rule(rules: list[dict[str, Any]], provider_id: str, rec: dict[
         cfg.pop("optionSpecs", None)
 
 
-def save_provider(
+def _save_provider(
     *,
     name: str,
     base_url: str,
@@ -888,6 +969,7 @@ def save_provider(
     provider_id: str | None = None,
     enabled: bool = True,  # 仅新建供应商时生效；更新时保留原值（R4-P1-3 [A-2]）
     path: Path = DEFAULT_CONFIG,
+    expected_revision: str | None = None,
 ) -> dict[str, Any]:
     name = name.strip()
     base_url = base_url.strip()
@@ -906,13 +988,18 @@ def save_provider(
     seen: set[str] = set()
     for rec in models:
         # R4-P1-10 [C-12]：入库前 strip、剥离换行等控制字符、限长 200。
-        model_id = MODEL_ID_CTRL_RE.sub("", str(rec.get("id") or "")).strip()[:200]
-        if not model_id or model_id in seen:
+        model_id = validate_model_id(str(rec.get("id") or ""))
+        if not model_id:
             continue
+        if model_id in seen:
+            raise SyncError(f"模型 {model_id} 重复，请合并或删除多余行")
         seen.add(model_id)
         cleaned.append({**rec, "id": model_id})
 
     data = load_config(path)
+    loaded_revision = config_revision(data)
+    if expected_revision is not None and loaded_revision != expected_revision:
+        raise SyncError("配置已被其他窗口修改，未保存。请重新读取后再编辑")
     ensure_model_config_bucket(data)
     rules = provider_rules(data)
     provider = None
@@ -921,10 +1008,13 @@ def save_provider(
         hits = find_providers(rules, provider_id=provider_id)
         if hits:
             provider = hits[0]
-    if provider is None:
+        else:
+            # ID 失效时禁止退化为按名称更新，避免新建表单静默覆盖同名供应商。
+            raise SyncError("供应商已不存在，请重新选择或新建一个不同名称的供应商")
+    if provider is None and not provider_id:
         hits = find_providers(rules, name=name)
         if hits:
-            provider = hits[0]
+            raise SyncError(f"供应商「{name}」已存在，请从左侧选择后更新，或使用不同名称新建")
     if provider is None:
         provider_id = str(uuid.uuid4())
         provider = {
@@ -950,8 +1040,8 @@ def save_provider(
         # 无条件覆盖会把用户在 ZCode 里禁用的供应商悄悄重新启用）。
         cfg = provider.setdefault("config", {})
         cfg.setdefault("group", "standard-personal")
-        cfg["access"] = {"type": "api-key", "apiKey": api_key}
-        cfg["api"] = {"type": resolved_type, "baseUrl": base_url.rstrip("/")}
+        cfg.setdefault("access", {}).update({"type": "api-key", "apiKey": api_key})
+        cfg.setdefault("api", {}).update({"type": resolved_type, "baseUrl": base_url.rstrip("/")})
         provider_id = str(provider.get("providerId"))
 
     model_ids = [rec["id"] for rec in cleaned]
@@ -960,33 +1050,35 @@ def save_provider(
     cfg["modelOrder"] = list(model_ids)
 
     existing_rules = model_rules(data)
-    # C2-5：重命名模型先按 origId 原地改名——沿用旧规则的 enabled/config 等全部键，
-    # 只换 modelId；改名后的规则自然落进 keep_pairs，不会先被 keep 过滤当孤儿删掉。
-    renames = {
-        str(rec.get("origId") or ""): rec["id"]
-        for rec in cleaned
-        if rec.get("origId") and str(rec.get("origId")) != rec["id"]
-    }
-    if renames:
-        for rule in existing_rules:
-            if rule.get("providerId") != provider_id:
-                continue
-            mid = str(rule.get("modelId") or "")
-            if mid in renames:
-                rule["modelId"] = renames[mid]
-    keep_pairs = {(provider_id, mid) for mid in model_ids}
-    existing_rules[:] = [
-        rule
-        for rule in existing_rules
-        if (rule.get("providerId"), rule.get("modelId")) in keep_pairs
-        or rule.get("providerId") != provider_id
-    ]
+    old_by_id: dict[str, dict] = {}
+    for rule in existing_rules:
+        if rule.get("providerId") == provider_id:
+            old_id = str(rule.get("modelId") or "")
+            if old_id in old_by_id:
+                raise SyncError(f"配置含重复模型规则：{old_id}，请先在 ZCode 中整理")
+            old_by_id[old_id] = rule
+    final_rules = []
+    used_origins = set()
     for rec in cleaned:
-        _upsert_model_rule(existing_rules, provider_id, rec)
+        origin = str(rec.get("origId") or rec["id"])
+        if origin in old_by_id:
+            if origin in used_origins:
+                raise SyncError("多个模型行引用同一旧模型，请重新读取配置")
+            used_origins.add(origin)
+            rule = copy.deepcopy(old_by_id[origin])
+            rule["modelId"] = rec["id"]
+            final_rules.append(rule)
+        _upsert_model_rule(final_rules, provider_id, rec)
+    existing_rules[:] = [r for r in existing_rules if r.get("providerId") != provider_id] + final_rules
 
+    if config_revision(load_config(path)) != loaded_revision:
+        raise SyncError("保存期间配置发生变化，未写入。请重新读取后重试")
     backup = backup_config(path)
+    if config_revision(load_config(path)) != loaded_revision:
+        raise SyncError("保存期间配置发生变化，未写入。请重新读取后重试")
     atomic_write_json(path, data)
     return {
+        "revision": config_revision(data),
         "ok": True,
         "created": created,
         "providerId": provider_id,
@@ -995,3 +1087,8 @@ def save_provider(
         "modelCount": len(model_ids),
         "providers": list_provider_summaries(data, include_key=True),
     }
+
+
+def save_provider(*, path: Path = DEFAULT_CONFIG, expected_revision: str | None = None, **kwargs) -> dict[str, Any]:
+    with _config_lock(path):
+        return _save_provider(path=path, expected_revision=expected_revision, **kwargs)

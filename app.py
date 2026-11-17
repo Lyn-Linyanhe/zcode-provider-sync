@@ -10,7 +10,7 @@ import sys
 import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import font as tkfont
+from tkinter import font as tkfont, messagebox
 
 from sync import (
     API_TYPES,
@@ -19,6 +19,8 @@ from sync import (
     REASONING_LABELS,
     REASONING_LADDER,
     SyncError,
+    config_revision,
+    validate_model_id,
     fetch_models,
     list_provider_summaries,
     load_config,
@@ -58,9 +60,9 @@ COL_DEL_W = 44  # 图标按钮列（插头/铅笔/垃圾桶，32px 画布）
 
 # R4-P1-9 文案包（findings-ux.md 逐条落地；R6-P1-14/15：统一「推理等级」命名）
 NAME_PLACEHOLDER = "输入模型 ID"
-CTX_PLACEHOLDER = "如 1000000（≈1M tokens）"
+CTX_PLACEHOLDER = "留空继承"
 MAX_PLACEHOLDER = "留空 = 默认"
-API_TYPE_HINT = "不确定选哪个？大多数 OpenAI 兼容接口、中转站选第一项 Chat Completions；仅直连官方 Anthropic 接口时选最后一项。"
+API_TYPE_HINT = "按服务商文档选择协议：Chat Completions、Responses 或 Anthropic Messages；中转服务也可能支持 Messages。"
 NO_CANDIDATE_TEXT = "还没有候选模型：先点上方「获取模型列表」"
 NO_MATCH_TEXT = "没有匹配的模型，换个关键字试试"
 REASON_HEAD_TIP = (
@@ -69,7 +71,7 @@ REASON_HEAD_TIP = (
 )
 DEFAULT_HEAD_TIP = (
     "默认档位：新建会话时用的那一档，直接选。"
-    "选了还没在「推理等级」勾选的档，会自动勾上并设为默认。"
+    "选择尚未勾选的档时会先确认，再添加到推理等级。"
     "写在列表末尾，ZCode 读最后一项。"
 )
 NUM_HEAD_TIP = (
@@ -108,38 +110,52 @@ def _load_builtin_rules() -> list[tuple[re.Pattern, dict]]:
     except Exception:  # noqa: BLE001
         zrules = db.get("zcodeSnapshot") or []
     merged = []
-    for rule in [*zrules, *(db.get("supplemental") or [])]:
+    supplemental = db.get("supplemental") or []
+    # 精确模型条目优先于 ZCode 家族规则；同源的覆盖规则从后到前逐字段取值。
+    for rule in [*sorted(supplemental, key=lambda r: len(r.get("display", "")), reverse=True), *reversed(zrules)]:
         try:
             pattern = rule["modelMatch"]
+            if rule.get("display"):
+                base = str(rule["display"])
+                pattern = r"(?:[^/]+/)*" + re.escape(base) + r"(?::(?:free|batch|online|thinking|extended))?(?:\[1m\])?"
             compiled = re.compile(pattern)
         except (KeyError, TypeError, re.error):
             continue
-        specificity = len(re.sub(r"[^0-9A-Za-z]", "", pattern))
-        merged.append((specificity, compiled, rule.get("config") or {}))
-    merged.sort(key=lambda item: -item[0])
-    _builtin_rules_cache = [(compiled, cfg) for _, compiled, cfg in merged]
-    return _builtin_rules_cache
+        merged.append((compiled, rule.get("config") or {}))
+    _builtin_rules_cache = merged
+    return merged
 
 
 def _builtin_model_info(model_id: str) -> dict:
-    """按 id 在内置库（ZCode 规则 + 补充表）里匹配模型家族，返回基本数据。
-    跳过 catch-all（".*"）：全匹配的兜底数值不参与精确填充。"""
+    """完整匹配，局部覆盖规则仅贡献有定义的字段；不使用全局 catch-all。"""
     if not model_id:
         return {}
+    alias = re.sub(r"(claude-(?:opus|sonnet|haiku)-[0-9]+)-([0-9]+)(?=$|[-:\[])", r"\1.\2", model_id)
+    info = {}
     for compiled, cfg in _load_builtin_rules():
-        if compiled.pattern == ".*":
-            break
-        if compiled.match(model_id):
-            props = cfg.get("properties") or {}
-            specs = cfg.get("optionSpecs") or {}
-            fmt = props.get("inputFormat") or {}
-            values = (specs.get("reasoningLevel") or {}).get("values")
-            return {
-                "contextWindow": props.get("contextWindow"),
-                "maxOutputTokens": (specs.get("maxOutputTokens") or {}).get("max"),
-                "reasoningValues": values if isinstance(values, list) and values else None,
-            }
-    return {}
+        if compiled.pattern in (".*", "^.*$"):
+            continue
+        if not (compiled.fullmatch(model_id) or compiled.fullmatch(alias)):
+            continue
+        props = cfg.get("properties") or {}
+        specs = cfg.get("optionSpecs") or {}
+        level = specs.get("reasoningLevel") or {}
+        candidates = {
+            "contextWindow": props.get("contextWindow"),
+            "maxOutputTokens": (specs.get("maxOutputTokens") or {}).get("max"),
+        }
+        for key, value in candidates.items():
+            if key not in info and isinstance(value, int) and not isinstance(value, bool) and value > 0:
+                info[key] = value
+        if "reasoningValues" not in info and isinstance(level.get("values"), list) and level["values"]:
+            info["reasoningValues"] = list(level["values"])
+            if level.get("map") is not None:
+                info["reasoningMap"] = level["map"]
+        for key, value in (props.get("inputFormat") or {}).items():
+            if isinstance(value, bool):
+                info.setdefault(key, value)
+    return info
+
 
 API_TYPE_OPTIONS = (
     ("chat", "Chat Completions (/v1/chat/completions)"),
@@ -149,7 +165,7 @@ API_TYPE_OPTIONS = (
 )
 # 档位中文都从 sync.REASONING_LABELS 来。勾选集合不是连续区间。
 REASON_UNSET = "未设置"
-DEFAULT_FOLLOW = "随最高勾选"
+DEFAULT_FOLLOW = "跟随最高"
 LABEL_TO_LEVEL = {label: level for level, label in REASONING_LABELS.items() if level}
 
 
@@ -243,6 +259,9 @@ class Tooltip:
             Tooltip._current._hide()
         if self._tip is not None or not self.widget.winfo_exists():
             return
+        text = self.text() if callable(self.text) else self.text
+        if not text:
+            return
         tip = tk.Toplevel(self.widget)
         tip.withdraw()
         tip.overrideredirect(True)
@@ -250,7 +269,8 @@ class Tooltip:
         tip.configure(bg=LINE2)
         inner = tk.Label(
             tip,
-            text=self.text,
+            text=text,
+            wraplength=min(600, self.widget.winfo_screenwidth() - 40),
             bg=POPUP_BG,
             fg=TEXT,
             font=self.fonts["small"],
@@ -263,6 +283,10 @@ class Tooltip:
         self.widget.update_idletasks()
         x = self.widget.winfo_rootx()
         y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
+        tip.update_idletasks()
+        x = max(0, min(x, tip.winfo_screenwidth() - tip.winfo_reqwidth() - 8))
+        if y + tip.winfo_reqheight() > tip.winfo_screenheight():
+            y = max(0, self.widget.winfo_rooty() - tip.winfo_reqheight())
         tip.geometry(f"+{x}+{y}")
         tip.deiconify()
         tip.lift()
@@ -315,17 +339,22 @@ class Drop(tk.Frame):
             padx=10,
         )
         # P1-1/P1-2：label 撑满左侧、箭头贴字段右缘（与基线一致），窄框里不再被裁成残影。
-        self.label.pack(side="left", fill="both", expand=True, ipady=6)
+        self.columnconfigure(0, weight=1)
+        self.label.grid(row=0, column=0, sticky="nsew", ipady=6)
         # P1-4：padx 10 + pady 4 扩大命中区；字形/字号与 API 格式下拉本就同款（ui ▾）。
         caret = tk.Label(
             self, text="▾", bg=INPUT, fg=MUTED, font=fonts["ui"], padx=10, pady=4
         )
-        caret.pack(side="right", padx=(0, 10))
+        caret.grid(row=0, column=1, sticky="e", padx=(0, 6))
         self.caret = caret
         for widget in (self, self.label, caret):
             widget.bind("<Button-1>", self._on_click)
         if width:
             self.configure(width=width)
+        self.configure(takefocus=True)
+        self.bind("<Return>", self._on_click)
+        self.bind("<space>", self._on_click)
+        self.label.bind("<Configure>", lambda _e: self._sync_color())
         self.variable.trace_add("write", self._on_var_write)
         self._sync_color()
 
@@ -362,6 +391,20 @@ class Drop(tk.Frame):
         else:
             shown = ""
             fg = MUTED
+        if self.searchable and shown and self.label.winfo_width() > 20:
+            available = max(10, self.label.winfo_width() - 8)
+            font = self.fonts["ui"]
+            if font.measure(shown) > available:
+                original = shown
+                left, right = len(original) // 3, len(original) - len(original) // 3
+                while left + right > 2 and font.measure(original[:left] + "…" + original[-right:]) > available:
+                    if right > left * 2:
+                        right -= 1
+                    else:
+                        left = max(1, left - 1)
+                        if left == 1:
+                            right -= 1
+                shown = original[:left] + "…" + original[-right:]
         self.label.configure(text=shown, fg=fg)
         self.caret.configure(fg=MUTED)
 
@@ -677,15 +720,29 @@ class ModelEditDialog(tk.Toplevel):
         # R6-2：弹窗整体底色与官方一致用 CARD(#2B2B2B)，输入框 INPUT 同色靠描边区分
         self.configure(bg=CARD)
         self.transient(app)
-        self.resizable(False, True)
+        self.resizable(True, True)
         fonts = app.fonts
 
-        outer = tk.Frame(self, bg=CARD)
-        outer.pack(fill="both", expand=True, padx=32, pady=24)
+        shell = tk.Frame(self, bg=CARD)
+        shell.pack(fill="both", expand=True, padx=24, pady=18)
+        self.dialog_footer = tk.Frame(shell, bg=CARD)
+        self.dialog_footer.pack(side="bottom", fill="x", pady=(12, 0))
+        tk.Label(shell, text="编辑模型配置", bg=CARD, fg=TEXT, font=fonts["h2"], anchor="w").pack(fill="x", pady=(0, 12))
+        self.scroll_canvas = tk.Canvas(shell, bg=CARD, highlightthickness=0, width=800, height=640)
+        self.scroll_canvas.pack(fill="both", expand=True)
+        outer = tk.Frame(self.scroll_canvas, bg=CARD)
+        self.content = outer
+        content_id = self.scroll_canvas.create_window((0, 0), window=outer, anchor="nw")
+        outer.bind("<Configure>", lambda _e: self.scroll_canvas.configure(scrollregion=self.scroll_canvas.bbox("all")))
+        self.scroll_canvas.bind("<Configure>", lambda e: self.scroll_canvas.itemconfigure(content_id, width=e.width))
+        self.bind("<MouseWheel>", self._scroll)
+        sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+        width, height = min(960, sw - 40), min(1000, sh - 80)
+        self.geometry(f"{width}x{height}+{max(0, (sw-width)//2)}+{max(0, (sh-height)//2)}")
+        self.minsize(min(640, width), min(480, height))
         # R6-3：弹窗标题用 h2（11pt bold，实测字高≈21px 对齐官方），与主窗标题拆档
-        tk.Label(
-            outer, text="编辑模型配置", bg=CARD, fg=TEXT, font=fonts["h2"], anchor="w"
-        ).pack(fill="x")
+        tk.Label(outer, text="应用后仍需在主窗口保存当前供应商。", bg=CARD, fg=MUTED,
+                 font=fonts["small"], anchor="w").pack(fill="x")
 
         # P2-23：弹窗字段标签升为 ui 字号（官方 14px），MUTED 色不变
         def field_label(text: str) -> None:
@@ -749,6 +806,15 @@ class ModelEditDialog(tk.Toplevel):
         self._chip(cap_row, "结构化输出", self.var_structured)
         self._chip(cap_row, "原生联网搜索", self.var_web)
         self._chip(cap_row, "对话中系统消息", self.var_midconv)
+        # 弹窗打开时的扩展字段快照：只有用户真正改动才写回（直接“应用”不改任何东西）
+        self._extras_initial = {
+            "image": bool(self.var_image.get()),
+            "video": bool(self.var_video.get()),
+            "pdf": bool(self.var_pdf.get()),
+            "structured": bool(self.var_structured.get()),
+            "webSearch": bool(self.var_web.get()),
+            "midConv": bool(self.var_midconv.get()),
+        }
 
         # U-4：统一「推理等级」命名，「可跳档」改「不必连续」
         field_label("推理等级（从低到高；勾选该模型支持的档即可，不必连续）")
@@ -819,7 +885,7 @@ class ModelEditDialog(tk.Toplevel):
             font=fonts["ui"],
             highlightthickness=1,
             highlightbackground=LINE2,
-            wrap="none",
+            wrap="word",
         )
         self.map_text.pack(fill="x")
         tk.Label(
@@ -837,7 +903,7 @@ class ModelEditDialog(tk.Toplevel):
             wraplength=660,
         ).pack(fill="x", pady=(4, 0))
         rmap = row.get("reasoningMap")
-        if rmap is None and isinstance(meta.get("reasoningMap"), (dict, str)):
+        if not row.get("mapChanged") and rmap is None and isinstance(meta.get("reasoningMap"), (dict, str)):
             rmap = meta["reasoningMap"]
         self._map_initial = ""
         if isinstance(rmap, str) and rmap.strip():
@@ -847,7 +913,7 @@ class ModelEditDialog(tk.Toplevel):
             self._map_initial = json.dumps(rmap, ensure_ascii=False, indent=2)
             self.map_text.insert("1.0", self._map_initial)
 
-        btn_row = tk.Frame(outer, bg=CARD)
+        btn_row = tk.Frame(self.dialog_footer, bg=CARD)
         btn_row.pack(fill="x", pady=(20, 0))
         self.error_var = tk.StringVar(value="")
         self.error_label = tk.Label(
@@ -855,10 +921,17 @@ class ModelEditDialog(tk.Toplevel):
         )
         self.error_label.pack(side="left", fill="x", expand=True)
         # R6-1：取消按钮必须 pack（原先只创建未 pack，底栏只剩保存）；P2-24：去字距
-        self._white_btn(btn_row, "保存", self._save)
+        self._white_btn(btn_row, "应用到列表", self._save)
         self.app._ghost_btn(btn_row, "取消", self.destroy, pad=16).pack(side="right", padx=(0, 8))
         self.bind("<Escape>", lambda _e: self.destroy())
         self.grab_set()
+
+    def _scroll(self, event):
+        if Popup.current is None:
+            first, last = self.scroll_canvas.yview()
+            if not (first <= 0 and last >= 1):
+                self.scroll_canvas.yview_scroll(int(-event.delta / 120), "units")
+        return "break"
 
     def _check(self, parent: tk.Frame, text: str, var: tk.BooleanVar, disabled: bool = False) -> None:
         """经典勾选框（推理等级组专用——R6-7 豁免清单明确不 chips 化）。"""
@@ -875,7 +948,8 @@ class ModelEditDialog(tk.Toplevel):
             bd=0,
             highlightthickness=0,
         )
-        item.pack(side="left", padx=(0, 14))
+        index = len(parent.grid_slaves())
+        item.grid(row=index // 4, column=index % 4, sticky="w", padx=(0, 10), pady=2)
         if disabled:
             item.configure(state="disabled")
 
@@ -985,7 +1059,11 @@ class ModelEditDialog(tk.Toplevel):
 
     def _save(self) -> None:
         row = self.row
-        model_id = MODEL_ID_CTRL_RE.sub("", self.id_entry.get()).strip()[:200]
+        try:
+            model_id = validate_model_id(self.id_entry.get())
+        except SyncError as exc:
+            self.error_var.set(str(exc))
+            return
         if not model_id:
             self.error_var.set("模型 ID 不能为空")
             return
@@ -1003,15 +1081,33 @@ class ModelEditDialog(tk.Toplevel):
         map_text = self.map_text.get("1.0", "end").strip()
         rmap = map_text or None
         checked = [level for level, var in self.reason_vars.items() if var.get()]
+        original_checked = [str(item) for item in row.get("checked") or []]
+        reason_changed = set(checked) != set(original_checked)
+        if not reason_changed:
+            checked = original_checked
         if rmap and not checked:
             self.error_var.set("推理参数映射需要至少勾选一个推理档位")
             return
-        # 写回行控件与元数据；真正的文件写入仍由主窗口「保存」统一完成
-        row["id"].set(model_id)
-        row["ctx"].set(ctx_raw)
-        row["max"].set(max_raw)
+        # 写回行控件与元数据；真正的文件写入仍由主窗口「保存」统一完成。
+        # 只有真正变化的值才标记为手动修改——直接“应用”不改任何东西时，
+        # 自动填充的字段来源保持不变（否则换模型会沿用旧模型参数）。
+        before_ctx, before_max = row["ctx"].get(), row["max"].get()
+        row["autofilling"] = True
+        try:
+            row["id"].set(model_id)
+            row["ctx"].set(ctx_raw)
+            row["max"].set(max_raw)
+        finally:
+            row["autofilling"] = False
+        for key, before, after in (("ctx", before_ctx, ctx_raw), ("max", before_max, max_raw)):
+            if before != after:
+                row["touched"].add(key)
+                row["sources"][key] = "手动设置" if after else "手动清空（保留默认）"
         row["checked"] = checked
-        row["extras"] = {
+        if reason_changed:
+            row["touched"].add("reason")
+            row["sources"]["reason"] = "手动设置"
+        extras = {
             "image": bool(self.var_image.get()),
             "video": bool(self.var_video.get()),
             "pdf": bool(self.var_pdf.get()),
@@ -1019,14 +1115,17 @@ class ModelEditDialog(tk.Toplevel):
             "webSearch": bool(self.var_web.get()),
             "midConv": bool(self.var_midconv.get()),
         }
-        row["extrasChanged"] = True
-        row["reasoningMap"] = rmap
-        row["mapChanged"] = True
+        if extras != self._extras_initial:
+            row["extras"] = extras
+            row["extrasChanged"] = True
+        if rmap != (self._map_initial or None):
+            row["reasoningMap"] = rmap
+            row["mapChanged"] = True
         self.app._sync_default_drop(row, source="checks")
         self.app._update_name_col()
         update_vis = row.get("update_vis_badge")
         if update_vis is not None:
-            update_vis(bool(row["extras"]["image"]))
+            update_vis(bool(self.var_image.get()))
         self.app.show_summary()
         self.app.flash_status(
             f"{model_id} · 已在编辑弹窗更新；点主窗口「保存」后写入配置",
@@ -1051,6 +1150,9 @@ class App(tk.Tk):
         self.fetch_gen = 0
         self.fetch_provider = ""  # R4-P1-2：进行中 fetch 的发起供应商快照
         self._status_after = None
+        self._clean_form = None
+        self._loaded_revision = None
+        self._layout_after = None
         self._rail_rows: dict[str, dict] = {}
         self._rail_sig: tuple = ()
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
@@ -1058,6 +1160,17 @@ class App(tk.Tk):
         self._build()
         self.after(80, self._dark_titlebar)
         self.reload_providers(select_first=True)
+        self._mark_clean()
+        self.after(300, self._refresh_dirty_indicator)
+
+    def destroy(self) -> None:
+        self.closed = True
+        Popup.close()
+        if Tooltip._current is not None:
+            Tooltip._current._hide()
+        for callback in self.tk.call("after", "info"):
+            self.after_cancel(callback)
+        super().destroy()
 
     def _fonts(self) -> None:
         family = "Microsoft YaHei UI"
@@ -1096,7 +1209,41 @@ class App(tk.Tk):
         except Exception:
             pass
 
+    def _form_state(self) -> str:
+        rows = []
+        for row in self.rows:
+            rows.append({
+                "id": row["id"].get(), "ctx": row["ctx"].get(), "max": row["max"].get(),
+                "checked": row["checked"], "default": row["default"].get(),
+                "extras": row.get("extras"), "map": row.get("reasoningMap"),
+                "mapChanged": row.get("mapChanged", False),
+            })
+        return json.dumps([self.provider_id.get(), self.name_var.get(), self.base_url.get(),
+                           self.api_key.get(), self.api_type.get(), rows], sort_keys=True)
+
+    def _mark_clean(self) -> None:
+        self._clean_form = self._form_state()
+
+    def _is_dirty(self) -> bool:
+        return self._clean_form is not None and self._form_state() != self._clean_form
+
+    def _refresh_dirty_indicator(self) -> None:
+        if self.closed:
+            return
+        self.dirty_label.configure(text="有未保存修改" if self._is_dirty() else "")
+        self.after(300, self._refresh_dirty_indicator)
+
+    def _confirm_leave(self) -> bool:
+        if not self._is_dirty():
+            return True
+        answer = messagebox.askyesnocancel("未保存修改", "当前供应商有未保存修改。\n是：保存后继续；否：放弃修改；取消：继续编辑。", parent=self)
+        if answer is None:
+            return False
+        return bool(self.on_save()) if answer else True
+
     def quit_app(self) -> None:
+        if not self._confirm_leave():
+            return
         self.closed = True
         Popup.close()
         self.destroy()
@@ -1157,8 +1304,12 @@ class App(tk.Tk):
             font=self.fonts["small"],
             anchor="w",
         ).grid(row=0, column=0, sticky="ew", padx=18, pady=(18, 6))
-        self.rail_box = tk.Frame(rail, bg=SIDE)
-        self.rail_box.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 14))
+        self.rail_canvas = tk.Canvas(rail, bg=SIDE, highlightthickness=0)
+        self.rail_canvas.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 14))
+        self.rail_box = tk.Frame(self.rail_canvas, bg=SIDE)
+        rail_id = self.rail_canvas.create_window((0, 0), window=self.rail_box, anchor="nw")
+        self.rail_box.bind("<Configure>", lambda _e: self.rail_canvas.configure(scrollregion=self.rail_canvas.bbox("all")))
+        self.rail_canvas.bind("<Configure>", lambda e: self.rail_canvas.itemconfigure(rail_id, width=e.width))
 
         # R6-5：rail 与右栏之间补 1px #414141 竖分隔线（官方 rail 右缘有同色分隔线）
         tk.Frame(card, bg=LINE, width=1).grid(row=0, column=1, sticky="ns")
@@ -1203,7 +1354,7 @@ class App(tk.Tk):
         )
         self.type_drop.grid(row=3, column=0, sticky="ew")
         # R4-P1-9 [U-3]：API 格式下拉正下方常驻指引一行（MUTED 小字）。
-        tk.Label(
+        self.api_hint = tk.Label(
             form,
             text=API_TYPE_HINT,
             bg=CARD,
@@ -1211,7 +1362,9 @@ class App(tk.Tk):
             font=self.fonts["small"],
             anchor="w",
             justify="left",
-        ).grid(row=4, column=0, sticky="w", pady=(4, 0))
+        )
+        self.api_hint.grid(row=4, column=0, sticky="ew", pady=(4, 0))
+        form.bind("<Configure>", lambda e: self.api_hint.configure(wraplength=max(100, e.width - 8)))
         self._label(form, "API Key", 5)
         self._key_field(form, 6)
         # R4-P0-1：API Key 行右侧的「测试连接」按钮移除——测试改为每行模型级的「测试」列，
@@ -1296,7 +1449,10 @@ class App(tk.Tk):
             justify="left",
         )
         self.status_label.grid(row=0, column=0, sticky="ew")
-        self._white_btn(footer, "保存", self.on_save).grid(row=0, column=1, padx=(16, 0))
+        self.status_label.bind("<Configure>", lambda e: self.status_label.configure(wraplength=max(100, e.width)))
+        self.dirty_label = tk.Label(footer, text="", bg=BG, fg="#D7BA7D", font=self.fonts["small"])
+        self.dirty_label.grid(row=1, column=0, sticky="w")
+        self._white_btn(footer, "保存当前供应商", self.on_save).grid(row=0, column=1, padx=(16, 0))
         self.bind_all("<MouseWheel>", self.on_wheel, add="+")
 
     def _drop_head(self, text: str, tip: str) -> None:
@@ -1501,46 +1657,74 @@ class App(tk.Tk):
 
     def _on_canvas_configure(self, event) -> None:
         self.canvas.itemconfigure(self.canvas_window, width=event.width)
+        if self._layout_after is None:
+            self._layout_after = self.after_idle(self._layout_model_rows)
 
-    def on_wheel(self, event) -> None:
+    def _layout_model_rows(self) -> None:
+        self._layout_after = None
+        available = self.canvas.winfo_width()
+        for row in self.rows:
+            right = row["right"]
+            left = row["left"]
+            compact = available < right.winfo_reqwidth() + 360
+            right.pack_forget()
+            left.pack_forget()
+            if compact:
+                left.pack(side="top", fill="x", pady=(0, 4))
+                right.pack(side="top", anchor="e")
+            else:
+                right.pack(side="right")
+                left.pack(side="left", fill="x", expand=True)
+            row["compact"] = compact
+        self._update_name_col()
+
+    def on_wheel(self, event):
         if Popup.current is not None:
             return None
-        first, last = self.canvas.yview()
+        path = str(event.widget)
+        canvas = None
+        if path.startswith(str(self.rail_canvas)):
+            canvas = self.rail_canvas
+        elif path.startswith(str(self.canvas)):
+            canvas = self.canvas
+        if canvas is None:
+            return None
+        first, last = canvas.yview()
         if first <= 0 and last >= 1:
             return None
-        self.canvas.yview_scroll(int(-event.delta / 120), "units")
+        canvas.yview_scroll(int(-event.delta / 120), "units")
         return "break"
 
     def reload_click(self) -> None:
+        if not self._confirm_leave():
+            return
         current = self.provider_id.get()
-        catalog, ids = list(self.catalog), list(self.catalog_ids)
-        self.reload_providers()
-        if current:
-            self.select_provider(current, keep_catalog=True)
-            self.catalog, self.catalog_ids = catalog, ids
-            self.refresh_row_catalog()
+        if not self.reload_providers():
+            return
+        if any(p["providerId"] == current for p in self.providers):
+            self.select_provider(current, force=True)
+        elif self.providers:
+            self.select_provider(self.providers[0]["providerId"], force=True)
+        else:
+            self.reset_new(force=True)
         self.flash_status("已重新读取 ZCode 配置。", "ok")
 
-    def reload_providers(self, select_first: bool = False) -> None:
-        error = None
+    def reload_providers(self, select_first: bool = False) -> bool:
         try:
             data = load_config(DEFAULT_CONFIG)
-            self.providers = list_provider_summaries(data, include_key=True)
-        except SyncError as exc:
-            self.providers = []
-            error = str(exc)
-        except (AttributeError, TypeError) as exc:
-            # R4-P0-3 [C-1] 兜底：畸形配置的意外类型错误转中文提示，启动/刷新不崩
-            self.providers = []
-            error = f"ZCode 配置文件读取异常，为安全起见未做修改：{exc!r}"
+            providers = list_provider_summaries(data, include_key=True)
+            revision = config_revision(data)
+        except (SyncError, AttributeError, TypeError, ValueError) as exc:
+            self.flash_status(f"读取失败，当前显示内容未更新：{exc}", "err")
+            return False
+        self.providers = providers
+        self._loaded_revision = revision
         self.render_rail()
-        if error:
-            self.flash_status(error, "err")
-        elif not self.providers:
-            # R4-P1-9 [U-8]：首启空态改为可执行的引导文案
-            self.flash_status(EMPTY_PROVIDERS_GUIDE, "guide")
         if select_first and self.providers:
-            self.select_provider(self.providers[0]["providerId"])
+            self.select_provider(self.providers[0]["providerId"], force=True)
+        elif not self.providers:
+            self.flash_status(EMPTY_PROVIDERS_GUIDE, "guide")
+        return True
 
     def _rail_signature(self) -> tuple:
         # P2-21：签名含 enabled——供应商禁用状态变化时左栏要重绘状态点
@@ -1613,8 +1797,11 @@ class App(tk.Tk):
             except tk.TclError:
                 continue
 
-    def reset_new(self) -> None:
+    def reset_new(self, *, force: bool = False) -> None:
+        if not force and not self._confirm_leave():
+            return
         Popup.close()
+        self.fetch_gen += 1
         self.provider_id.set("")
         self.name_var.set("新供应商")
         self.base_url.set("")
@@ -1626,10 +1813,18 @@ class App(tk.Tk):
         self.clear_rows()
         self.add_blank_row()
         self.render_rail()
+        self._mark_clean()
         self.flash_status("新建供应商。填写后获取模型列表，从下拉选择再保存。", "guide")
 
-    def select_provider(self, provider_id: str, *, keep_catalog: bool = False) -> None:
+    def select_provider(self, provider_id: str, *, keep_catalog: bool = False, force: bool = False) -> None:
+        if not force and provider_id == self.provider_id.get():
+            return
+        if not force and not self._confirm_leave():
+            return
         Popup.close()
+        self.fetch_gen += 1
+        self.fetching = False
+        self.fetch_btn.configure(state="normal", text="↓  获取模型列表")
         item = next((p for p in self.providers if p.get("providerId") == provider_id), None)
         if not item:
             return
@@ -1651,6 +1846,7 @@ class App(tk.Tk):
         else:
             self.add_blank_row()
         self.render_rail()
+        self._mark_clean()
         self.show_summary()
 
     def clear_rows(self) -> None:
@@ -1660,6 +1856,12 @@ class App(tk.Tk):
         self._on_rows_configure()
 
     def add_blank_row(self) -> None:
+        for row in self.rows:
+            if not row["id"].get().strip():
+                widget = row.get("name_entry") or row.get("drop")
+                if widget is not None:
+                    widget.focus_set()
+                return
         self.add_row({"id": "", "contextWindow": "", "reasoning": ""})
 
     def _catalog_ctx(self, model_id: str):
@@ -1685,11 +1887,10 @@ class App(tk.Tk):
     def _update_name_col(self) -> None:
         # cap 按可用宽度收紧：右列实测宽 + 徽章余量，避免长 ID 把右列挤出卡片
         try:
-            self.update_idletasks()
             right_w = 0
             for row in self.rows:
                 right = row.get("right")
-                if right is not None:
+                if right is not None and not row.get("compact"):
                     try:
                         right_w = max(right_w, right.winfo_reqwidth())
                     except tk.TclError:
@@ -1704,26 +1905,19 @@ class App(tk.Tk):
             self._attach_name_tooltip(row, width)
 
     def _attach_name_tooltip(self, row: dict, width: int) -> None:
-        """模型 ID 被列宽裁掉时（常见于超长网关 ID），悬停显示完整名称。"""
         drop = row.get("drop")
-        value = row["id"].get().strip()
-        if drop is None or not value:
+        widget = drop.label if drop is not None else row.get("name_entry")
+        if widget is None:
             return
-        needed = self.fonts["ui"].measure(value) + 34  # caret + 内距
-        if needed <= width:
-            return
-        if not getattr(drop, "_name_tooltip_bound", False):
-            drop.label.bind(
-                "<Enter>",
-                lambda _e, r=row, d=drop: self._show_name_tooltip(d, r),
-                add="+",
-            )
-            drop._name_tooltip_bound = True
+        if getattr(widget, "_model_tip", None) is None:
+            widget._model_tip = Tooltip(widget, lambda r=row: r["id"].get(), self.fonts)
+            widget.bind("<Control-c>", lambda _e, r=row: self._copy_model_id(r))
 
-    def _show_name_tooltip(self, drop, row: dict) -> None:
-        value = row["id"].get().strip()
-        if value and self.fonts["ui"].measure(value) + 34 > row["id_box"].winfo_width():
-            Tooltip(drop.label, value, self.fonts)
+    def _copy_model_id(self, row: dict):
+        self.clipboard_clear()
+        self.clipboard_append(row["id"].get())
+        self.flash_status("已复制完整模型 ID", "guide")
+        return "break"
 
     def add_row(self, rec: dict) -> None:
         frame = tk.Frame(self.rows_frame, bg=ROW, highlightbackground=LINE, highlightthickness=1)
@@ -1751,6 +1945,11 @@ class App(tk.Tk):
             "checked": checked,
             "default": default_var,
             "meta": rec,
+            "touched": set(),
+            "autofilling": False,
+            "sources": {},
+            "info_id": id_var.get(),
+            "ctx_original": ctx_var.get(),
         }
 
         # 右侧各列先建：_field_h 由 _mini_field 实测得出，左侧名字列定宽需要它。
@@ -1821,6 +2020,7 @@ class App(tk.Tk):
         # P1-3：模型名列放进定宽容器（宽 = 各行名字最大实测宽 + caret 区，clamp [140,260]，
         # 全行共用），caret 贴容器右缘、徽章起点不再随名字长度漂移。
         left = tk.Frame(inner, bg=ROW)
+        row["left"] = left
         left.pack(side="left", fill="x", expand=True)
         id_box = tk.Frame(
             left, bg=ROW, width=self._name_col_width(id_var.get()), height=self._field_h
@@ -1880,6 +2080,9 @@ class App(tk.Tk):
         self.rows.append(row)
         self._sync_default_drop(row, source="load")
         # R4-P1-9 [U-2]：上下文/最大输出占位提示；R4-P1-6：失焦校验；R4-P0-2：名字列按目录状态构建
+        Tooltip(ctx_box.numentry, lambda r=row: "上下文来源：" + r["sources"].get("ctx", "已存配置 / 继承默认"), self.fonts)
+        Tooltip(max_box.numentry, lambda r=row: "最大输出来源：" + r["sources"].get("max", "已存配置 / 继承默认"), self.fonts)
+        Tooltip(reason.label, lambda r=row: self._reason_note(r) + "\n来源：" + r["sources"].get("reason", "已存配置 / 未设置"), self.fonts)
         self._attach_placeholder(ctx_box, ctx_var, CTX_PLACEHOLDER)
         self._attach_placeholder(max_box, max_var, MAX_PLACEHOLDER)
         ctx_box.numentry.bind(
@@ -1888,9 +2091,11 @@ class App(tk.Tk):
         max_box.numentry.bind(
             "<FocusOut>", lambda _e, r=row: self._on_num_focus_out(r), add="+"
         )
+        for key in ("ctx", "max"):
+            row[key].trace_add("write", lambda *_args, r=row, k=key: self._field_edited(r, k))
         id_var.trace_add("write", lambda *_: self._sync_name_ph(row))
         self._build_name_field(row)
-        self._update_name_col()
+        self._layout_model_rows()
         self.show_summary()
         self.after(10, self._on_rows_configure)
 
@@ -2028,7 +2233,7 @@ class App(tk.Tk):
                 return None
         except tk.TclError:
             return None
-        model_id = MODEL_ID_CTRL_RE.sub("", row["id"].get()).strip()[:200]
+        model_id = row["id"].get().strip()
         if require_id and not model_id:
             model_id = "（未选模型）"
         elif not model_id:
@@ -2052,21 +2257,14 @@ class App(tk.Tk):
             self.flash_status(error, "err")
 
     def _known_model_info(self, model_id: str) -> dict:
-        """按 id 在全部供应商的已配置模型里比对（字段级取第一个非空）：
-        上下文 / 最大输出 / 推理档位 / 视觉。数据来自内存中的供应商摘要，不读文件。"""
-        info: dict = {}
-        if not model_id:
-            return info
-        for provider in self.providers:
-            for rec in provider.get("models") or []:
-                if rec.get("id") != model_id:
-                    continue
-                for key in ("contextWindow", "maxOutputTokens", "reasoningValues"):
-                    if not info.get(key) and rec.get(key) not in (None, ""):
-                        info[key] = rec[key]
-                if rec.get("supportsImage"):
-                    info["supportsImage"] = True
-        return info
+        # 不将不同供应商的限制、档位和映射拼成一份不存在的配置。
+        provider = next((p for p in self.providers if p["providerId"] == self.provider_id.get()), {})
+        return next((dict(r) for r in provider.get("models", []) if r.get("id") == model_id), {})
+
+    def _field_edited(self, row: dict, key: str) -> None:
+        if not row.get("autofilling"):
+            row["touched"].add(key)
+            row["sources"][key] = "手动设置" if row[key].get().strip() else "手动清空（保留默认）"
 
     @staticmethod
     def _fmt_tokens(value) -> str:
@@ -2079,99 +2277,74 @@ class App(tk.Tk):
         return f"{number // 1000}K" if number >= 1000 else str(number)
 
     def on_model_picked(self, row: dict) -> None:
-        """选定模型后自动带入基本数据（填充链见 _fill_row_info）。"""
-        self._fill_row_info(row)
         self._update_name_col()
         self.show_summary()
+        self._fill_row_info(row)
 
-    def _fill_row_info(self, row: dict) -> list[str]:
-        """基本数据填充链（按 id）：已知配置（跨供应商比对）→ 内置模型库 → 目录元数据 → 默认值。
-        行内已填的字段一律不动，只补空。返回带入项的描述列表。"""
+    def _fill_row_info(self, row: dict, *, notify: bool = True) -> list[str]:
         model_id = row["id"].get().strip()
         if not model_id:
             return []
+        changed_model = row.get("info_id") != model_id
         known = self._known_model_info(model_id)
+        catalog = next((r for r in self.catalog if r.get("id") == model_id), {})
         builtin = _builtin_model_info(model_id)
-        catalog_ctx = self._catalog_ctx(model_id)
-        filled: list[str] = []
-        used_known = False
-        used_builtin = False
-        used_catalog = False
-        if not row["ctx"].get().strip():
-            ctx = (
-                known.get("contextWindow")
-                or builtin.get("contextWindow")
-                or catalog_ctx
-                or DEFAULT_CONTEXT_WINDOW
-            )
-            row["ctx"].set(str(int(ctx)))
-            filled.append(f"上下文 {self._fmt_tokens(ctx)}")
-            used_known = used_known or bool(known.get("contextWindow"))
-            used_builtin = used_builtin or (not known.get("contextWindow") and bool(builtin.get("contextWindow")))
-            used_catalog = used_catalog or (
-                not known.get("contextWindow") and not builtin.get("contextWindow") and bool(catalog_ctx)
-            )
-        if not row["max"].get().strip() and known.get("maxOutputTokens"):
-            row["max"].set(str(int(known["maxOutputTokens"])))
-            filled.append(f"最大输出 {self._fmt_tokens(known['maxOutputTokens'])}")
-            used_known = True
-        elif not row["max"].get().strip() and builtin.get("maxOutputTokens"):
-            row["max"].set(str(int(builtin["maxOutputTokens"])))
-            filled.append(f"最大输出 {self._fmt_tokens(builtin['maxOutputTokens'])}")
-            used_builtin = True
-        if not row["checked"] and (known.get("reasoningValues") or builtin.get("reasoningValues")):
-            values = known.get("reasoningValues") or builtin.get("reasoningValues")
-            row["checked"] = [str(item) for item in values]
+        sources = [(known, "当前供应商配置"), (catalog, "当前服务商目录"), (builtin, "内置模型库")]
+        filled = []
+        row["autofilling"] = True
+        try:
+            if changed_model:
+                for key in ("ctx", "max"):
+                    if key not in row["touched"]:
+                        row[key].set("")
+                        row["sources"].pop(key, None)
+                if "reason" not in row["touched"]:
+                    row["checked"] = []
+                    row["default"].set(DEFAULT_FOLLOW)
+                    row["reasoningMap"] = None
+                    row["mapChanged"] = True
+                row["info_id"] = model_id
+            for field, key in (("ctx", "contextWindow"), ("max", "maxOutputTokens")):
+                if field in row["touched"] or row[field].get().strip():
+                    continue
+                for record, label in sources:
+                    value = record.get(key)
+                    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+                        row[field].set(str(value))
+                        row["sources"][field] = label
+                        filled.append("上下文" if field == "ctx" else "最大输出")
+                        break
+                else:
+                    if field == "ctx":
+                        row[field].set(str(DEFAULT_CONTEXT_WINDOW))
+                        row["sources"][field] = "暂用 128K（未核实）"
+                        filled.append("上下文暂用值")
+            if "reason" not in row["touched"] and not row["checked"]:
+                for record, label in sources:
+                    values = record.get("reasoningValues")
+                    if isinstance(values, list) and values:
+                        row["checked"] = list(values)
+                        row["default"].set(self._level_label(str(values[-1]), DEFAULT_FOLLOW))
+                        if record.get("reasoningMap") is not None:
+                            row["reasoningMap"] = record["reasoningMap"]
+                            row["mapChanged"] = True
+                        row["sources"]["reason"] = label
+                        filled.append("推理等级")
+                        break
             self._sync_default_drop(row, source="load")
-            labels = [REASONING_LABELS.get(level, level) for level in self._ordered_checks(row)]
-            filled.append("推理等级 " + " / ".join(labels))
-            used_known = used_known or bool(known.get("reasoningValues"))
-            used_builtin = used_builtin or (not known.get("reasoningValues") and bool(builtin.get("reasoningValues")))
-        if filled:
-            if used_known:
-                source = "已知配置"
-            elif used_builtin:
-                source = "内置模型库"
-            elif used_catalog:
-                source = "服务商目录"
-            else:
-                source = "默认值"
-            self.flash_status(f"{model_id} · 已按{source}带入：{'；'.join(filled)}", "guide")
-        elif known or builtin.get("contextWindow") or catalog_ctx:
-            self.flash_status(f"{model_id} · 行内已有信息，未改动", "guide")
+        finally:
+            row["autofilling"] = False
+        if notify and filled:
+            self.flash_status(f"{model_id} · 已补全 {' / '.join(filled)}；悬停参数查看来源，保存后生效", "guide")
         return filled
 
     def _autofill_row(self, row: dict) -> None:
-        if not row["id"].get().strip():
-            return
-        self._fill_row_info(row)
+        if row in self.rows:
+            self.on_model_picked(row)
 
     def _autofill_rows_from_catalog(self) -> None:
-        """获取成功后按 id 补全已有行的空字段（已有值不动，只补空；不逐行弹提示）。"""
         for row in self.rows:
-            model_id = row["id"].get().strip()
-            if not model_id:
-                continue
-            known = self._known_model_info(model_id)
-            builtin = _builtin_model_info(model_id)
-            catalog_ctx = self._catalog_ctx(model_id)
-            if not row["ctx"].get().strip():
-                ctx = (
-                    known.get("contextWindow")
-                    or builtin.get("contextWindow")
-                    or catalog_ctx
-                    or DEFAULT_CONTEXT_WINDOW
-                )
-                row["ctx"].set(str(int(ctx)))
-            if not row["max"].get().strip():
-                max_out = known.get("maxOutputTokens") or builtin.get("maxOutputTokens")
-                if max_out:
-                    row["max"].set(str(int(max_out)))
-            if not row["checked"]:
-                values = known.get("reasoningValues") or builtin.get("reasoningValues")
-                if values:
-                    row["checked"] = [str(item) for item in values]
-                    self._sync_default_drop(row, source="load")
+            self._fill_row_info(row, notify=False)
 
     # ---- 推理等级勾选 / 默认档：只改变量，不写配置 ----
 
@@ -2198,10 +2371,9 @@ class App(tk.Tk):
     def _reason_summary(checked: list[str]) -> str:
         if not checked:
             return REASON_UNSET
-        labels = [REASONING_LABELS.get(level, level) for level in checked]
-        if len(labels) <= 3:
-            return "、".join(labels)
-        return f"{labels[0]}…{labels[-1]}（{len(labels)}）"
+        if len(checked) == 1:
+            return REASONING_LABELS.get(checked[0], checked[0])
+        return f"已选 {len(checked)} 档"
 
     def _sync_default_drop(self, row: dict, source: str = "") -> None:
         checked = [str(item) for item in row.get("checked") or []]
@@ -2230,6 +2402,10 @@ class App(tk.Tk):
         level = self._label_to_level(label, DEFAULT_FOLLOW)
         checked = [str(item) for item in row.get("checked") or []]
         if level and level not in checked:
+            if not messagebox.askyesno("确认模型能力", f"该模型尚未勾选「{label}」。服务商确认支持此档位后，才应添加。\n添加并设为默认吗？", parent=self):
+                row["default"].set(DEFAULT_FOLLOW)
+                self._sync_default_drop(row)
+                return
             checked.append(level)
             checked.sort(
                 key=lambda item: REASONING_LADDER.index(item)
@@ -2241,6 +2417,7 @@ class App(tk.Tk):
             row["default"].set(DEFAULT_FOLLOW)
         else:
             row["default"].set(self._level_label(level, DEFAULT_FOLLOW))
+        row["touched"].add("reason")
         self._sync_default_drop(row, source="default")
         ordered = self._ordered_checks(row)
         labels = [REASONING_LABELS.get(item, item) for item in ordered]
@@ -2258,6 +2435,9 @@ class App(tk.Tk):
     def _ordered_checks(self, row: dict) -> list[str]:
         """勾选结果：标准档按梯序，非标准档保持勾选列表原相对顺序，默认档固定在末尾。"""
         checked_list = [str(item) for item in row.get("checked") or []]
+        original_values = row["meta"].get("reasoningValues") or []
+        if checked_list == original_values and self._label_to_level(row["default"].get(), DEFAULT_FOLLOW) == (original_values[-1] if original_values else ""):
+            return list(original_values)
         selected = set(checked_list)
         original = [str(item) for item in (row["meta"].get("reasoningValues") or [])]
         ordered = [level for level in REASONING_LADDER if level in selected]
@@ -2269,6 +2449,8 @@ class App(tk.Tk):
             if item not in ordered:
                 ordered.append(item)
         default = self._label_to_level(row["default"].get(), DEFAULT_FOLLOW)
+        if not default and ordered:
+            default = next((v for v in reversed(REASONING_LADDER) if v in selected), ordered[-1])
         if default and default in ordered and ordered[-1] != default:
             ordered.remove(default)
             ordered.append(default)
@@ -2324,6 +2506,7 @@ class App(tk.Tk):
 
         def apply_checks() -> None:
             row["checked"] = [level for level, var in vars_by_level.items() if var.get()]
+            row["touched"].add("reason")
             self._sync_default_drop(row, source="checks")
             Popup.close()
             labels = [REASONING_LABELS.get(level, level) for level in self._ordered_checks(row)]
@@ -2373,8 +2556,6 @@ class App(tk.Tk):
     def remove_row(self, frame: tk.Frame) -> None:
         self.rows = [row for row in self.rows if row["frame"] is not frame]
         frame.destroy()
-        if not self.rows:
-            self.add_blank_row()
         self._update_name_col()
         self._on_rows_configure()
         self.show_summary()
@@ -2398,14 +2579,14 @@ class App(tk.Tk):
         seen: set[str] = set()
         for row in self.rows:
             # R4-P1-10 [C-12]：入库前剥离换行/控制字符、strip、限长 200（与 sync.save_provider 同规）
-            model_id = MODEL_ID_CTRL_RE.sub("", row["id"].get()).strip()[:200]
+            model_id = validate_model_id(row["id"].get())
             if not model_id or model_id in seen:
                 continue
             seen.add(model_id)
             ctx_raw = row["ctx"].get().strip()
             max_raw = row["max"].get().strip()
             try:
-                ctx = int(ctx_raw) if ctx_raw else self._catalog_ctx(model_id)
+                ctx = int(ctx_raw) if ctx_raw else None
             except ValueError as exc:
                 raise SyncError(self._num_error("上下文", model_id)) from exc
             if max_raw:
@@ -2435,6 +2616,7 @@ class App(tk.Tk):
                 "id": model_id,
                 "origId": orig_id if orig_id and orig_id != model_id else None,
                 "contextWindow": ctx,
+                "contextChanged": ctx_raw != row["ctx_original"],
                 "maxOutputTokens": max_out,
                 "maxChanged": max_changed,
                 "reasoning": new_values[-1] if new_values else "",
@@ -2620,7 +2802,7 @@ class App(tk.Tk):
             if self.provider_id.get() != getattr(self, "fetch_provider", None):
                 # 已切换供应商：旧获取的错误不再打扰新供应商（按钮仍需复位）
                 return
-            self.flash_status(message.split("\n", 1)[0], "err")
+            self.flash_status(message.replace("\n", "；"), "err")
         finally:
             self.fetching = False
             try:
@@ -2628,8 +2810,17 @@ class App(tk.Tk):
             except tk.TclError:
                 pass
 
-    def on_save(self) -> None:
+    def on_save(self) -> bool:
         Popup.close()
+        if self._loaded_revision is None:
+            self.flash_status("尚未成功读取配置，禁止保存。请先重新读取", "err")
+            return False
+        try:
+            for row in self.rows:
+                validate_model_id(row["id"].get())
+        except SyncError as exc:
+            self.flash_status(str(exc), "err")
+            return False
         # R4-P1-6：保存前输入侧校验（非正整数红框+提示并拦截），不再静默替换。
         # 空 ID 行同样拦截：不能为了跳过空行放过非法数字。
         for row in self.rows:
@@ -2640,7 +2831,7 @@ class App(tk.Tk):
         # C2-1：重复模型 ID 红字拦截——原先是 collected_models 先到先得静默丢行
         dup_seen: set[str] = set()
         for row in self.rows:
-            model_id = MODEL_ID_CTRL_RE.sub("", row["id"].get()).strip()[:200]
+            model_id = row["id"].get().strip()
             if not model_id:
                 continue
             if model_id in dup_seen:
@@ -2650,9 +2841,9 @@ class App(tk.Tk):
         blank = sum(1 for row in self.rows if not MODEL_ID_CTRL_RE.sub("", row["id"].get()).strip())
         try:
             models = self.collected_models()
-            if not models:
-                self.flash_status("至少添加一个模型。先获取列表，再从下拉选择。", "err")
-                return
+            if not models and not self.provider_id.get():
+                self.flash_status("新供应商至少添加一个模型。", "err")
+                return False
             result = save_provider(
                 name=self.name_var.get(),
                 base_url=self.base_url.get(),
@@ -2661,6 +2852,7 @@ class App(tk.Tk):
                 models=models,
                 provider_id=self.provider_id.get() or None,
                 path=DEFAULT_CONFIG,
+                expected_revision=self._loaded_revision,
             )
         except SyncError as exc:
             self.flash_status(str(exc), "err")
@@ -2671,8 +2863,9 @@ class App(tk.Tk):
             return
         catalog, ids = list(self.catalog), list(self.catalog_ids)
         self.providers = result["providers"]
+        self._loaded_revision = result["revision"]
         self.provider_id.set(result["providerId"])
-        self.select_provider(result["providerId"], keep_catalog=True)
+        self.select_provider(result["providerId"], keep_catalog=True, force=True)
         self.catalog, self.catalog_ids = catalog, ids
         self.refresh_row_catalog()
         # R4-P1-9 [U-12]：下一步指引具体到页面与按钮
@@ -2682,7 +2875,9 @@ class App(tk.Tk):
         )
         if blank > 0:
             message += f"；已跳过 {blank} 行未选模型"
+        self._mark_clean()
         self.flash_status(message, "ok")
+        return True
 
 
 def main() -> None:
