@@ -99,6 +99,58 @@ class PersistenceTests(unittest.TestCase):
 
 
 class NetworkTests(unittest.TestCase):
+    def test_refused_local_proxy_retries_get_directly(self):
+        from unittest.mock import Mock
+        import urllib.error
+        import urllib.request
+        import errno
+
+        req = urllib.request.Request("https://example.invalid/models", headers={"Authorization": "Bearer fake"})
+        proxy, direct = Mock(), Mock()
+
+        def refused(request, **kwargs):
+            request.set_proxy("127.0.0.1:7890", "http")
+            raise urllib.error.URLError(ConnectionRefusedError(errno.ECONNREFUSED, "refused"))
+
+        proxy.open.side_effect = refused
+        with patch.object(urllib.request, "getproxies", return_value={"https": "http://127.0.0.1:7890"}), \
+             patch.object(urllib.request, "proxy_bypass", return_value=False), \
+             patch.object(urllib.request, "build_opener", side_effect=[proxy, direct]) as build:
+            self.assertIs(direct.open.return_value, sync._open_request(req, 8))
+        retried = direct.open.call_args.args[0]
+        self.assertEqual("example.invalid", retried.host)
+        self.assertIsNone(retried._tunnel_host)
+        self.assertEqual("Bearer fake", retried.get_header("Authorization"))
+        self.assertLessEqual(direct.open.call_args.kwargs["timeout"], 8)
+        handlers = build.call_args.args
+        self.assertTrue(any(isinstance(h, sync.SafeRedirectHandler) for h in handlers))
+        self.assertTrue(any(isinstance(h, urllib.request.ProxyHandler) and h.proxies == {} for h in handlers))
+
+    def test_proxy_fallback_is_limited_to_local_refused_get(self):
+        from unittest.mock import Mock
+        import urllib.error
+        import urllib.request
+        import errno
+
+        refused = ConnectionRefusedError(errno.ECONNREFUSED, "refused")
+        cases = [
+            ("http://proxy.example.invalid:7890", "GET", refused, False),
+            ("http://127.0.0.1:7890", "GET", TimeoutError(), False),
+            ("http://127.0.0.1:7890", "POST", refused, False),
+            ("http://127.0.0.1:7890", "GET", refused, True),
+        ]
+        for proxy_url, method, reason, bypass in cases:
+            with self.subTest(proxy=proxy_url, method=method, reason=type(reason), bypass=bypass):
+                opener = Mock()
+                opener.open.side_effect = urllib.error.URLError(reason)
+                req = urllib.request.Request("https://example.invalid/models", method=method)
+                with patch.object(urllib.request, "getproxies", return_value={"https": proxy_url}), \
+                     patch.object(urllib.request, "proxy_bypass", return_value=bypass), \
+                     patch.object(urllib.request, "build_opener", return_value=opener) as build:
+                    with self.assertRaises(urllib.error.URLError):
+                        sync._open_request(req, 8)
+                self.assertEqual(1, build.call_count)
+
     def test_backup_url_after_timeout(self):
         def get(url, headers, **kwargs):
             if url.endswith("/v1/models"):

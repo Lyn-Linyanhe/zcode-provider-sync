@@ -2,12 +2,15 @@
 """刷新模型信息快照。默认联网；--offline 明确使用已有缓存，不改写抓取日期。"""
 
 import argparse
+import copy
 from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
 import re
 import tempfile
+import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,6 +46,25 @@ def atomic_json(path: Path, data):
             os.unlink(name)
 
 
+def _open(request, timeout):
+    """系统代理指向未启动的本机端口时直连一次；其余网络错误原样上抛。"""
+    direct_request = copy.deepcopy(request)  # ProxyHandler 会改写 host/隧道信息
+    try:
+        return urllib.request.urlopen(request, timeout=timeout)
+    except urllib.error.URLError as exc:
+        if not isinstance(exc.reason, ConnectionRefusedError):
+            raise
+        host = urllib.parse.urlsplit(request.full_url).hostname or ""
+        proxy = urllib.request.getproxies().get(request.type, "")
+        proxy_host = urllib.parse.urlsplit(
+            proxy if "://" in proxy else "//" + proxy
+        ).hostname
+        if proxy_host not in {"127.0.0.1", "localhost", "::1"} or urllib.request.proxy_bypass(host):
+            raise
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        return opener.open(direct_request, timeout=timeout)
+
+
 def fetch(*, offline=False, cache=RAW):
     if offline:
         envelope = json.loads(cache.read_text(encoding="utf-8"))
@@ -50,7 +72,7 @@ def fetch(*, offline=False, cache=RAW):
             raise ValueError("缓存缺少抓取日期，请联网刷新一次")
         return validate(envelope["payload"]), envelope["fetchedAt"]
     request = urllib.request.Request(URL, headers={"Accept": "application/json", "User-Agent": "zcode-provider-sync"})
-    with urllib.request.urlopen(request, timeout=25) as response:
+    with _open(request, 25) as response:
         if response.status != 200:
             raise ValueError(f"目录返回 HTTP {response.status}")
         raw = response.read(16 * 1024 * 1024 + 1)

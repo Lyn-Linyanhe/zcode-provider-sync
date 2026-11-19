@@ -106,10 +106,37 @@ def safe_url(url: str) -> str:
 
 
 def _open_request(req, timeout):
-    opener = urllib.request.build_opener(
-        SafeRedirectHandler(), urllib.request.HTTPSHandler(context=ssl.create_default_context())
+    proxies = urllib.request.getproxies()
+    proxy_url = proxies.get(req.type, "")
+    proxy_host = urllib.parse.urlsplit(
+        proxy_url if "://" in proxy_url else "//" + proxy_url
+    ).hostname
+    local_proxy = proxy_host in {"127.0.0.1", "localhost", "::1"}
+    can_retry_direct = (
+        req.get_method() == "GET" and local_proxy
+        and not urllib.request.proxy_bypass(req.host)
     )
-    return opener.open(req, timeout=timeout)
+    # ProxyHandler 会修改 Request.host 和隧道信息；直连必须使用修改前的请求。
+    direct_req = copy.deepcopy(req) if can_retry_direct else None
+    started = time.monotonic()
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler(proxies), SafeRedirectHandler(),
+        urllib.request.HTTPSHandler(context=ssl.create_default_context())
+    )
+    try:
+        return opener.open(req, timeout=timeout)
+    except urllib.error.URLError as exc:
+        # 只处理未启动的本机代理；超时、证书错误、远程代理及 POST 均不绕过。
+        if not can_retry_direct or not isinstance(exc.reason, ConnectionRefusedError):
+            raise
+        remaining = timeout - (time.monotonic() - started)
+        if remaining <= 0:
+            raise
+        direct = urllib.request.build_opener(
+            urllib.request.ProxyHandler({}), SafeRedirectHandler(),
+            urllib.request.HTTPSHandler(context=ssl.create_default_context())
+        )
+        return direct.open(direct_req, timeout=remaining)
 
 
 @contextmanager

@@ -1,6 +1,6 @@
 {
- "asOf": "2026-11-17",
- "fetchedAt": "2026-11-17T10:15:37+00:00",
+ "asOf": "2026-11-19",
+ "fetchedAt": "2026-11-19T06:03:12+00:00",
  "sources": [
   "https://openrouter.ai/api/v1/models",
   "D:\\zcode\\resources\\config\\provider\\zcode-builtin.json"
@@ -1763,6 +1763,236 @@
  ],
  "supplemental": [
   {
+   "modelMatch": "google/gemini\\-4\\-neon",
+   "vendor": "google",
+   "display": "gemini-4-neon",
+   "sourceId": "google/gemini-4-neon",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 943718
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "google/gemini\\-4\\-neon:batch",
+   "vendor": "google",
+   "display": "gemini-4-neon:batch",
+   "sourceId": "google/gemini-4-neon:batch",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1048576,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": true
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 943718
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-astra\\-pro",
+   "vendor": "openai",
+   "display": "gpt-6.2-astra-pro",
+   "sourceId": "openai/gpt-6.2-astra-pro",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-astra\\-pro:batch",
+   "vendor": "openai",
+   "display": "gpt-6.2-astra-pro:batch",
+   "sourceId": "openai/gpt-6.2-astra-pro:batch",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-astra",
+   "vendor": "openai",
+   "display": "gpt-6.2-astra",
+   "sourceId": "openai/gpt-6.2-astra",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-astra:batch",
+   "vendor": "openai",
+   "display": "gpt-6.2-astra:batch",
+   "sourceId": "openai/gpt-6.2-astra:batch",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-sol\\-pro",
+   "vendor": "openai",
+   "display": "gpt-6.2-sol-pro",
+   "sourceId": "openai/gpt-6.2-sol-pro",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-sol\\-pro:batch",
+   "vendor": "openai",
+   "display": "gpt-6.2-sol-pro:batch",
+   "sourceId": "openai/gpt-6.2-sol-pro:batch",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-sol",
+   "vendor": "openai",
+   "display": "gpt-6.2-sol",
+   "sourceId": "openai/gpt-6.2-sol",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
+   "modelMatch": "openai/gpt\\-6\\.2\\-sol:batch",
+   "vendor": "openai",
+   "display": "gpt-6.2-sol:batch",
+   "sourceId": "openai/gpt-6.2-sol:batch",
+   "sources": [
+    "https://openrouter.ai/api/v1/models"
+   ],
+   "config": {
+    "properties": {
+     "contextWindow": 1050000,
+     "inputFormat": {
+      "supportsImage": true,
+      "supportsVideo": false
+     }
+    },
+    "optionSpecs": {
+     "maxOutputTokens": {
+      "max": 128000
+     }
+    }
+   }
+  },
+  {
    "modelMatch": "qwen/qwen4\\-max",
    "vendor": "qwen",
    "display": "qwen4-max",
@@ -2217,7 +2447,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 943718
+      "max": 393216
      }
     }
    }
@@ -3175,7 +3405,7 @@
    ],
    "config": {
     "properties": {
-     "contextWindow": 1048576,
+     "contextWindow": 1048575,
      "inputFormat": {
       "supportsImage": true,
       "supportsVideo": true
@@ -3183,7 +3413,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 131072
+      "max": 943717
      }
     }
    }
@@ -3482,7 +3712,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 384000
+      "max": 943718
      }
     }
    }
@@ -4923,7 +5153,7 @@
    ],
    "config": {
     "properties": {
-     "contextWindow": 202752,
+     "contextWindow": 204800,
      "inputFormat": {
       "supportsImage": false,
       "supportsVideo": false
@@ -4931,7 +5161,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 182476
+      "max": 131072
      }
     }
    }
@@ -5506,7 +5736,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 81920
+      "max": 65536
      }
     }
    }
@@ -6817,7 +7047,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 16384
+      "max": 235929
      }
     }
    }
@@ -7093,7 +7323,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 65536
+      "max": 117964
      }
     }
    }
@@ -7499,7 +7729,7 @@
    ],
    "config": {
     "properties": {
-     "contextWindow": 163840,
+     "contextWindow": 128000,
      "inputFormat": {
       "supportsImage": false,
       "supportsVideo": false
@@ -7507,7 +7737,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 32768
+      "max": 32000
      }
     }
    }
@@ -7944,7 +8174,7 @@
     },
     "optionSpecs": {
      "maxOutputTokens": {
-      "max": 117964
+      "max": 16384
      }
     }
    }
